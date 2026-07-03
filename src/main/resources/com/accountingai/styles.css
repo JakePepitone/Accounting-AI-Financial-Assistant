@@ -80,3 +80,54 @@
     -fx-text-fill: #3949ab;
     -fx-font-size: 12px;
 }
+
+/* ===== Login Screen ===== */
+.login-root {
+    -fx-background-color: #f4f6f9;
+}
+
+.login-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1a237e;
+}
+
+.login-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: #757575;
+}
+
+.login-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #424242;
+}
+
+.login-input {
+    -fx-font-size: 13px;
+    -fx-padding: 8 10 8 10;
+    -fx-background-radius: 6;
+    -fx-border-color: #c5cae9;
+    -fx-border-radius: 6;
+}
+
+.login-input:focused {
+    -fx-border-color: #1a237e;
+}
+
+.login-button {
+    -fx-background-color: #1a237e;
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-padding: 10;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.login-button:hover {
+    -fx-background-color: #283593;
+}
+
+.error-label {
+    -fx-text-fill: #c62828;
+    -fx-font-size: 12px;
+}

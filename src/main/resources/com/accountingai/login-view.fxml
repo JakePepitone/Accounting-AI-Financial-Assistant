@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.accountingai.LoginController"
+      alignment="CENTER"
+      spacing="12"
+      prefWidth="400.0" prefHeight="500.0"
+      styleClass="login-root">
+
+    <padding>
+        <Insets top="60" right="50" bottom="60" left="50"/>
+    </padding>
+
+    <Label text="Accounting AI" styleClass="login-title"/>
+    <Label text="Financial Assistant" styleClass="login-subtitle"/>
+
+    <VBox spacing="5" style="-fx-padding: 20 0 0 0;">
+        <Label text="Username" styleClass="login-label"/>
+        <TextField fx:id="usernameField" promptText="Enter your username" styleClass="login-input"/>
+    </VBox>
+
+    <VBox spacing="5">
+        <Label text="Password" styleClass="login-label"/>
+        <PasswordField fx:id="passwordField" promptText="Enter your password" styleClass="login-input"/>
+    </VBox>
+
+    <Label fx:id="errorLabel" text="" styleClass="error-label"/>
+
+    <Button text="Login" onAction="#handleLogin" styleClass="login-button" maxWidth="Infinity"/>
+
+</VBox>

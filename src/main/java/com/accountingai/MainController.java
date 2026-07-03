@@ -12,9 +12,8 @@ public class MainController {
     @FXML
     private ListView<String> documentListView;
 
-    // initialize the dashboard
     @FXML
     public void initialize() {
-        statusLabel.setText("Welcome! Upload feature coming soon.");
+        statusLabel.setText("Ready");
     }
 }

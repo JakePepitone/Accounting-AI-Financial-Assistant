@@ -27,18 +27,16 @@
                 <Insets top="20" right="20" bottom="20" left="20"/>
             </padding>
 
-            <!-- Documents panel -->
-            <VBox spacing="12" styleClass="panel" HBox.hgrow="ALWAYS">
+            <VBox spacing="10" styleClass="panel" HBox.hgrow="ALWAYS">
                 <Label text="Documents" styleClass="panel-title"/>
                 <Separator/>
                 <ListView fx:id="documentListView" styleClass="document-list" VBox.vgrow="ALWAYS"/>
             </VBox>
 
-            <!-- AI Insights panel -->
-            <VBox spacing="12" styleClass="panel" HBox.hgrow="ALWAYS">
+            <VBox spacing="10" styleClass="panel" HBox.hgrow="ALWAYS">
                 <Label text="AI Insights" styleClass="panel-title"/>
                 <Separator/>
-                <Label text="Upload a document to generate AI-powered financial insights."
+                <Label text="Upload a document to see AI-generated insights here."
                        styleClass="placeholder-text" wrapText="true"/>
             </VBox>
 
