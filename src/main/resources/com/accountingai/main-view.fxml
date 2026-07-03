@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.accountingai.MainController"
+            prefHeight="600.0" prefWidth="900.0"
+            styleClass="root-pane">
+
+    <!-- Top Header -->
+    <top>
+        <VBox styleClass="header">
+            <Label text="Accounting AI Financial Assistant" styleClass="header-title"/>
+            <Label text="Upload and analyze your financial documents" styleClass="header-subtitle"/>
+        </VBox>
+    </top>
+
+    <!-- Main Content -->
+    <center>
+        <HBox spacing="20" styleClass="content-area">
+            <padding>
+                <Insets top="20" right="20" bottom="20" left="20"/>
+            </padding>
+
+            <!-- Left Panel: Upload -->
+            <VBox spacing="12" styleClass="panel" HBox.hgrow="ALWAYS">
+                <Label text="Documents" styleClass="panel-title"/>
+                <Separator/>
+                <Button fx:id="uploadButton"
+                        text="+ Upload PDF"
+                        onAction="#onUploadButtonClick"
+                        styleClass="upload-button"
+                        maxWidth="Infinity"/>
+                <ListView fx:id="documentListView"
+                          styleClass="document-list"
+                          VBox.vgrow="ALWAYS"/>
+            </VBox>
+
+            <!-- Right Panel: Insights -->
+            <VBox spacing="12" styleClass="panel" HBox.hgrow="ALWAYS">
+                <Label text="AI Insights" styleClass="panel-title"/>
+                <Separator/>
+                <Label text="Upload a document to generate AI-powered financial insights."
+                       styleClass="placeholder-text" wrapText="true"/>
+            </VBox>
+
+        </HBox>
+    </center>
+
+    <!-- Bottom Status Bar -->
+    <bottom>
+        <HBox styleClass="status-bar">
+            <padding>
+                <Insets top="8" right="16" bottom="8" left="16"/>
+            </padding>
+            <Label fx:id="statusLabel" text="Ready" styleClass="status-label"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>
