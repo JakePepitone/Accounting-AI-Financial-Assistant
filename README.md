@@ -73,7 +73,7 @@ This project is being developed as the CSC 325 Software Engineering Group Projec
 
 ### Database
 
-* Firebase or SQLite
+* SQLite
 
 ### AI Services
 
