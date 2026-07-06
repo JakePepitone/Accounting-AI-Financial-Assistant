@@ -10,7 +10,7 @@ public class Main extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("login-view.fxml"));
-        Scene scene = new Scene(loader.load(), 400, 500);
+        Scene scene = new Scene(loader.load(), 500, 650);
         scene.getStylesheets().add(getClass().getResource("styles.css").toExternalForm());
         stage.setTitle("Accounting AI Financial Assistant");
         stage.setResizable(false);

@@ -12,7 +12,7 @@
       fx:controller="com.accountingai.LoginController"
       alignment="CENTER"
       spacing="12"
-      prefWidth="400.0" prefHeight="500.0"
+      prefWidth="500.0" prefHeight="650.0"
       styleClass="login-root">
 
     <padding>
