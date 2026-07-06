@@ -29,7 +29,7 @@ public class LoginController {
             return;
         }
 
-        // temporary hardcoded login, will connect to database later
+        // temporary login check, will replace once database auth is set up
         if (username.equals("admin") && password.equals("1234")) {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("main-view.fxml"));
             Scene scene = new Scene(loader.load(), 900, 600);
