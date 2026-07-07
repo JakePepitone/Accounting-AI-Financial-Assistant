@@ -1,0 +1,2 @@
+# Keeps the assets/ directory tracked in git even when empty.
+# Project assets (sample images, PDFs, logos) live here and ARE version-controlled.

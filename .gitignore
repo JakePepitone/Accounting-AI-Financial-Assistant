@@ -1,2 +1,39 @@
-.idea/
+# ============================================================
+# Accounting AI Financial Assistant - .gitignore
+# Ignore build output and runtime artifacts only.
+# Source, resources, FXML/CSS, and tracked assets stay in git.
+# ============================================================
+
+# --- Maven build output ---
 target/
+
+# --- IDE project files ---
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+*.launch
+
+# --- SQLite database files (self-created at runtime in app-data dir) ---
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+
+# --- Runtime output folders (exports, working data) ---
+exports/
+data/
+
+# --- Logs ---
+*.log
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+
+# NOTE: assets/ is intentionally NOT ignored. Sample images/PDFs and other
+# committed project assets are tracked. Only build/runtime artifacts above
+# are excluded from version control.

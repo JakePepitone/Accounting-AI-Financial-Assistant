@@ -1,0 +1,3 @@
+# Keeps src/test/resources/ tracked in git even when empty.
+# Tests generate their PDF fixtures at runtime (see TestPdfs), so no binary
+# fixtures are committed here.

@@ -1,161 +1,132 @@
-# Accounting-AI-Financial-Assistant
+# Accounting AI Financial Assistant
+
+A JavaFX desktop application that imports bank/financial statement PDFs, parses
+their contents into a structured SQLite database, previews documents, searches
+transactions, and exports statements to CSV, Excel (.xlsx), and PDF.
+
+> **Course:** Farmingdale State College - CSC 325 Capstone
+> **Group:** 02 - Summer 2026
+
+---
+
 ## Overview
 
-The Accounting AI Financial Assistant is a desktop application designed to help users analyze financial documents and generate AI-powered insights. Users can upload financial documents such as invoices, statements, and reports in PDF format. The application extracts key financial information, summarizes the data, and provides actionable insights to improve financial understanding and decision-making.
+Small businesses and individuals receive financial statements as PDFs that are
+tedious to read, search, and reconcile by hand. The Accounting AI Financial
+Assistant streamlines that workflow: upload a statement PDF, and the app extracts
+the account details, balance summary, and individual transactions, stores them in
+a local database, and lets you preview, search, and re-export the data in the
+format you need. Everything runs locally - no cloud services and no data leaves
+your machine.
 
-This project is being developed as the CSC 325 Software Engineering Group Project at Farmingdale State College.
+## Team - Group 02
 
----
+| Role | Member |
+| --- | --- |
+| Project Manager | Jake Pepitone |
+| Backend | Mohammed |
+| Database | Ramon |
+| Frontend | Kundan |
+| QA | Gabriel |
 
-## Team Members
+## Objectives
 
-| Role              | Team Member   |
-| ----------------- | ------------- |
-| Project Manager   | Jake Pepitone |
-| Backend Engineer  | Mohammed      |
-| Database Engineer | Ramon         |
-| Frontend Engineer | Kundan        |
-| QA / UAT Tester   | Gabriel       |
+- Provide a simple, local, desktop tool for turning statement PDFs into
+  structured, searchable financial data.
+- Persist parsed accounts, statements, and transactions in an embedded SQLite
+  database that requires zero setup from the user.
+- Support re-exporting statement data in multiple common formats (CSV, Excel, PDF).
+- Keep the codebase readable and well-tested as a student capstone reference.
 
----
+## MVP Features (10)
 
-## Project Objectives
-
-* Upload and process financial PDF documents.
-* Extract relevant financial information automatically.
-* Generate AI-powered summaries and insights.
-* Provide a user-friendly desktop interface.
-* Store processed document information securely.
-* Demonstrate practical use of AI within financial analysis workflows.
-
----
-
-## Key Features
-
-### Document Upload
-
-* Upload PDF financial documents.
-* Validate supported file formats.
-
-### Data Extraction
-
-* Extract text from uploaded PDFs.
-* Identify key financial metrics and values.
-
-### AI-Powered Analysis
-
-* Generate document summaries.
-* Highlight important financial information.
-* Identify trends, risks, and notable findings.
-
-### User Dashboard
-
-* View uploaded documents.
-* Review extracted financial data.
-* Access generated AI insights.
-
-### Data Storage
-
-* Store document metadata.
-* Save analysis results for future reference.
+1. **User login** - secure sign-in backed by SHA-256 password hashing.
+2. **PDF upload & import** - select a statement PDF and import it in one click.
+3. **Text extraction** - pull the raw text out of each PDF (Apache PDFBox).
+4. **Statement parsing** - detect the period, balance summary, and transactions.
+5. **Local database storage** - persist accounts, statements, and transactions
+   in SQLite.
+6. **Document preview** - render the first page as an image plus its extracted text.
+7. **Transaction & text search** - find matches within the current document and
+   across stored transactions.
+8. **Batch / folder import** - import multiple PDFs at once with progress reporting.
+9. **Multi-format export** - export a statement to CSV, Excel (.xlsx), or PDF.
+10. **Settings** - configure the default export folder, export format, theme, and
+    page size.
 
 ---
 
-## Proposed Technology Stack
+## Build & Run
 
-### Frontend
+### Requirements
 
-* JavaFX
+- **JDK 21+** (the project compiles on JDK 22 as well).
+- **Maven 3.9+** - or simply open the project in **IntelliJ IDEA**, **Eclipse**,
+  or **NetBeans**, which bundle their own Maven and can run the goals below from
+  the IDE without a separate Maven install.
 
-### Backend
+### Run the application
 
-* Java
-
-### Database
-
-* SQLite
-
-### AI Services
-
-* OpenAI API
-* Google Gemini API
-* Claude API (under evaluation)
-
-### Document Processing
-
-* Apache PDFBox
-
-### Version Control
-
-* GitHub
-
----
-
-## Repository Structure
-
-```text
-/docs
-/src
-/test
-/assets
-README.md
+```bash
+mvn clean javafx:run
 ```
 
----
+### Run the tests
 
-## Development Process
+```bash
+mvn test
+```
 
-The team will follow Agile and Scrum principles throughout the project lifecycle.
+### Default login
 
-### Sprint Activities
+| Username | Password |
+| --- | --- |
+| `admin` | `1234` |
 
-* Sprint Planning
-* Daily Communication via Discord
-* Sprint Reviews
-* Sprint Retrospectives
+### Database location
 
-### Project Management Tools
+The SQLite database **self-creates on first launch** in the user's application-data
+directory - it is not committed to the repository and you do not need to create it
+by hand:
 
-* GitHub Projects
-* GitHub Issues
-* Discord
+- **Windows:** `%LOCALAPPDATA%\AccountingAI\accounting-ai.db`
+- **macOS / Linux (fallback):** `~/.accounting-ai/accounting-ai.db`
 
----
-
-## Current Status
-
-Team Formed
-
-Roles Assigned
-
-Project Selected
-
-GitHub Repository Created
-
-Requirements Gathering
-
-IEEE SRS Development
-
-System Design
-
-Development Phase
-
-Testing & Validation
+On that first launch the app also runs the bundled `schema.sql` and `seed.sql`,
+which create the tables and insert the sample John Smith statement plus the default
+`admin` user.
 
 ---
 
-## Course Information
+## Tech Stack
 
-**Course:** CSC 325 – Software Engineering
+- **Language / Runtime:** Java 21
+- **UI:** JavaFX 21.0.2 (Controls, FXML, Swing interop)
+- **Database:** SQLite via `org.xerial:sqlite-jdbc`
+- **PDF:** Apache PDFBox 3.0.5
+- **Excel:** Apache POI 5.3.0 (`XSSFWorkbook`)
+- **CSV:** Apache Commons CSV 1.11.0
+- **Tests:** JUnit 5 (Jupiter)
+- **Build:** Maven
 
-**Institution:** Farmingdale State College
+## Project Structure
 
-**Semester:** Summer 2026
+```
+accounting-ai/
+├── pom.xml
+├── src/
+│   ├── main/
+│   │   ├── java/com/accountingai/      # app, controllers, model, db, service, util
+│   │   └── resources/
+│   │       ├── com/accountingai/       # FXML views + styles.css
+│   │       └── sql/                    # schema.sql, seed.sql
+│   └── test/
+│       └── java/com/accountingai/      # JUnit 5 tests
+├── assets/                             # tracked project assets
+└── docs/                               # QA test strategy & UAT plan
+```
 
-**Project:** Group 02 Capstone Project
+## License
 
----
-
-## Contact
-
-For project-related questions, please contact the Project Manager through the team's Discord server.
+Academic project for CSC 325 at Farmingdale State College. Not licensed for
+commercial use.

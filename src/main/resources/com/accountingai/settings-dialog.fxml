@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.accountingai.controller.SettingsController"
+      spacing="14"
+      prefWidth="440.0"
+      styleClass="settings-root">
+
+    <padding>
+        <Insets top="20" right="24" bottom="20" left="24"/>
+    </padding>
+
+    <Label text="Settings" styleClass="panel-title"/>
+
+    <!-- Default export folder -->
+    <VBox spacing="4">
+        <Label text="Default export folder" styleClass="login-label"/>
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <TextField fx:id="exportFolderField" promptText="Choose a folder"
+                       styleClass="search-field" HBox.hgrow="ALWAYS"/>
+            <Button text="Browse..." onAction="#handleBrowse"/>
+        </HBox>
+    </VBox>
+
+    <!-- Default format -->
+    <VBox spacing="4">
+        <Label text="Default format" styleClass="login-label"/>
+        <ComboBox fx:id="formatCombo" maxWidth="Infinity"/>
+    </VBox>
+
+    <!-- Theme -->
+    <VBox spacing="4">
+        <Label text="Theme" styleClass="login-label"/>
+        <ComboBox fx:id="themeCombo" maxWidth="Infinity"/>
+    </VBox>
+
+    <!-- Rows per page -->
+    <VBox spacing="4">
+        <Label text="Rows per page" styleClass="login-label"/>
+        <Spinner fx:id="pageSizeSpinner" editable="true" maxWidth="Infinity"/>
+    </VBox>
+
+    <!-- Button bar -->
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="Save" onAction="#handleSave" defaultButton="true" styleClass="login-button"/>
+        <Button text="Cancel" onAction="#handleCancel" cancelButton="true"/>
+    </HBox>
+
+</VBox>
