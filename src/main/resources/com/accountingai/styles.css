@@ -110,3 +110,16 @@
     -fx-text-fill: #c62828;
     -fx-font-size: 12px;
 }
+
+.upload-button {
+    -fx-background-color: black;
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-padding: 10 16 10 16;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.upload-button:hover {
+    -fx-background-color: #283593;
+}
