@@ -1,4 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Accounting AI Financial Assistant
+  Farmingdale State College - CSC 325 Capstone - Group 02 - Summer 2026
+
+  Maven build file. Targets JDK 21 (also compiles on JDK 22). JavaFX desktop app
+  with SQLite storage, Apache PDFBox for PDF handling, Apache POI for Excel export,
+  and commons-csv for CSV export. Tests run on JUnit 5 (Jupiter).
+
+  Common commands:
+    mvn clean javafx:run   -> build and launch the desktop app
+    mvn test               -> run the JUnit 5 test suite
+    mvn clean package      -> produce the jar in target/
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -9,13 +22,33 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
+    <name>Accounting AI Financial Assistant</name>
+    <description>JavaFX desktop assistant for importing, parsing, and exporting bank statements.</description>
+
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <!-- Compile against the Java 21 release. -->
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Dependency versions kept in one place for easy upgrades. -->
         <javafx.version>21.0.2</javafx.version>
+        <pdfbox.version>3.0.5</pdfbox.version>
+        <sqlite.version>3.47.1.0</sqlite.version>
+        <poi.version>5.3.0</poi.version>
+        <commonscsv.version>1.11.0</commonscsv.version>
+        <slf4j.version>2.0.16</slf4j.version>
+        <junit.version>5.11.4</junit.version>
+
+        <!-- Build plugin versions. -->
+        <compiler.plugin.version>3.13.0</compiler.plugin.version>
+        <surefire.plugin.version>3.5.2</surefire.plugin.version>
     </properties>
 
     <dependencies>
+        <!-- ============================================================ -->
+        <!-- JavaFX: UI toolkit (controls, FXML, and Swing interop).       -->
+        <!-- javafx-swing is needed by SwingFXUtils to convert AWT images. -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
@@ -26,10 +59,90 @@
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <!-- ============================================================ -->
+        <!-- Apache PDFBox 3.x: PDF text extraction, rendering, export.    -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>${pdfbox.version}</version>
+        </dependency>
+
+        <!-- ============================================================ -->
+        <!-- SQLite JDBC driver: the embedded database.                    -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>${sqlite.version}</version>
+        </dependency>
+
+        <!-- ============================================================ -->
+        <!-- SLF4J simple binding: quiets/handles PDFBox + SQLite logging. -->
+        <!-- Runtime scope only (not needed to compile).                   -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- ============================================================ -->
+        <!-- Apache POI (OOXML): Excel (.xlsx) export via XSSFWorkbook.    -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>${poi.version}</version>
+        </dependency>
+
+        <!-- ============================================================ -->
+        <!-- Apache Commons CSV: CSV export.                               -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>${commonscsv.version}</version>
+        </dependency>
+
+        <!-- ============================================================ -->
+        <!-- JUnit 5 (Jupiter): unit tests. Test scope only.               -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <!-- Compiler plugin: pin the release level to Java 21. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${compiler.plugin.version}</version>
+                <configuration>
+                    <release>21</release>
+                </configuration>
+            </plugin>
+
+            <!-- Surefire: runs the JUnit 5 test suite during `mvn test`. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.plugin.version}</version>
+            </plugin>
+
+            <!-- JavaFX plugin: `mvn javafx:run` launches the app. -->
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>

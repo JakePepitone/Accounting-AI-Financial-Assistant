@@ -9,7 +9,7 @@
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.accountingai.LoginController"
+      fx:controller="com.accountingai.controller.LoginController"
       alignment="CENTER"
       spacing="12"
       prefWidth="500.0" prefHeight="650.0"

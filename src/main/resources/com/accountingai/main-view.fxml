@@ -7,7 +7,6 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.control.Button?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
@@ -31,7 +30,6 @@
             <VBox spacing="10" styleClass="panel" HBox.hgrow="ALWAYS">
                 <Label text="Documents" styleClass="panel-title"/>
                 <Separator/>
-                <Button text="Upload PDF" onAction="#handleUpload" styleClass="upload-button"/>
                 <ListView fx:id="documentListView" styleClass="document-list" VBox.vgrow="ALWAYS"/>
             </VBox>
 
