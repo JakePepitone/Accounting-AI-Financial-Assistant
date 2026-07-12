@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.accountingai.MainController"
-            prefHeight="600.0" prefWidth="900.0"
+            fx:controller="com.accountingai.controller.MainController"
+            prefHeight="700.0" prefWidth="1100.0"
             styleClass="root-pane">
 
     <top>
@@ -27,17 +31,47 @@
                 <Insets top="20" right="20" bottom="20" left="20"/>
             </padding>
 
-            <VBox spacing="10" styleClass="panel" HBox.hgrow="ALWAYS">
+            <!-- Left panel: document list + import actions -->
+            <VBox spacing="10" styleClass="panel" prefWidth="280">
                 <Label text="Documents" styleClass="panel-title"/>
                 <Separator/>
+
+                <HBox spacing="8">
+                    <Button text="Upload PDF" onAction="#handleUpload" styleClass="upload-button"/>
+                    <Button text="Import Folder" onAction="#handleImportFolder" styleClass="upload-button"/>
+                </HBox>
+
                 <ListView fx:id="documentListView" styleClass="document-list" VBox.vgrow="ALWAYS"/>
+
+                <Button text="Settings" onAction="#handleOpenSettings" styleClass="upload-button"/>
             </VBox>
 
+            <!-- Center panel: preview + search -->
             <VBox spacing="10" styleClass="panel" HBox.hgrow="ALWAYS">
-                <Label text="AI Insights" styleClass="panel-title"/>
+                <Label text="Document Preview" styleClass="panel-title"/>
                 <Separator/>
-                <Label text="Upload a document to see AI-generated insights here."
-                       styleClass="placeholder-text" wrapText="true"/>
+
+                <ImageView fx:id="previewImageView" fitWidth="300" preserveRatio="true"/>
+                <TextArea fx:id="previewTextArea" editable="false" wrapText="true"
+                          styleClass="document-list" VBox.vgrow="ALWAYS"/>
+
+                <Separator/>
+                <Label text="Search" styleClass="panel-title"/>
+                <HBox spacing="8">
+                    <TextField fx:id="searchField" promptText="Search text or transactions..."
+                               styleClass="login-input" HBox.hgrow="ALWAYS"/>
+                    <Button text="Search" onAction="#handleSearch" styleClass="upload-button"/>
+                </HBox>
+                <ListView fx:id="searchResultsView" styleClass="document-list" prefHeight="150"/>
+            </VBox>
+
+            <!-- Right panel: export actions -->
+            <VBox spacing="10" styleClass="panel" prefWidth="200">
+                <Label text="Export" styleClass="panel-title"/>
+                <Separator/>
+                <Button text="Export as PDF" onAction="#handleExportPdf" styleClass="upload-button" maxWidth="Infinity"/>
+                <Button text="Export as CSV" onAction="#handleExportCsv" styleClass="upload-button" maxWidth="Infinity"/>
+                <Button text="Export as Excel" onAction="#handleExportXlsx" styleClass="upload-button" maxWidth="Infinity"/>
             </VBox>
 
         </HBox>
