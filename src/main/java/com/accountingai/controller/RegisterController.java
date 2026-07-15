@@ -8,7 +8,14 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import com.accountingai.db.DatabaseManager;
+import com.accountingai.db.dao.UserDao;
+import com.accountingai.model.User;
+import com.accountingai.util.PasswordUtil;
+
 public class RegisterController {
+
+    private final UserDao userDao = new UserDao(new DatabaseManager());
 
     @FXML
     private TextField fullNameField;
@@ -53,8 +60,22 @@ public class RegisterController {
             return;
         }
 
-        // TODO: Replace with real account creation once backend AuthService/database supports registration
-        registerErrorLabel.setText("Account created! )");
+        String passwordHash = PasswordUtil.sha256(password);
+
+        User user = new User(
+                fullName,
+                username,
+                email,
+                passwordHash
+        );
+
+        int userId = userDao.insert(user);
+        if (userId > 0) {
+            registerErrorLabel.setText("Account created! )");
+        }
+        else {
+            registerErrorLabel.setText("Unable to create account.");
+        }
     }
 
     private boolean isValidEmail(String email) {
