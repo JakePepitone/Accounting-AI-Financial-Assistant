@@ -50,6 +50,11 @@ public class LoginController {
                     getClass().getResource("/com/accountingai/main-view.fxml"));
             Parent root = loader.load();
 
+            // pass the logged-in username to the dashboard
+            MainController mainController = loader.getController();
+            mainController.setUsername(usernameField.getText().trim());
+
+
             Scene scene = new Scene(root, 900, 600);
             scene.getStylesheets().add(
                     getClass().getResource("/com/accountingai/styles.css").toExternalForm());

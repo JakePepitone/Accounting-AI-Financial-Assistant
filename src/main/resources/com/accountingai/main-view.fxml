@@ -11,6 +11,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.Region?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
@@ -20,6 +21,11 @@
 
     <top>
         <VBox styleClass="header">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label fx:id="usernameLabel" text="" styleClass="header-subtitle"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="Logout" onAction="#handleLogout" styleClass="upload-button"/>
+            </HBox>
             <Label text="Accounting AI Financial Assistant" styleClass="header-title"/>
             <Label text="Upload and analyze your financial documents" styleClass="header-subtitle"/>
         </VBox>
