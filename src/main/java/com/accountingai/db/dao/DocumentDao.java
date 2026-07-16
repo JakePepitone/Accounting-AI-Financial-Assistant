@@ -159,6 +159,18 @@ public class DocumentDao {
         }
     }
 
+    // deletes a document by id — used by the Delete Selected button
+    public void delete(int id) {
+        String sql = "DELETE FROM document_metadata WHERE document_id = ?";
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete document", e);
+        }
+    }
+
     // ------------------------------------------------------------------
     // Row mapping & conversion helpers
     // ------------------------------------------------------------------
