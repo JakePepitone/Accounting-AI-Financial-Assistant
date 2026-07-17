@@ -167,7 +167,7 @@ public class MainController {
             showAlert(Alert.AlertType.ERROR, "Import error", String.valueOf(e.getMessage()));
         }
     }
-
+    // deletes whichever document is selected, after a quick confirm popup
     @FXML
     void handleDelete() {
         DocumentMetadata selected = documentListView.getSelectionModel().getSelectedItem();
