@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.ScrollPane?>
+
+<ScrollPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.accountingai.controller.RegisterController"
+            fitToWidth="true"
+            prefWidth="400.0" prefHeight="600.0"
+            styleClass="login-root">
+
+    <VBox alignment="CENTER" spacing="10">
+        <padding>
+            <Insets top="40" right="50" bottom="40" left="50"/>
+        </padding>
+
+        <Label text="Create Account" styleClass="login-title"/>
+        <Label text="Set up your new account" styleClass="login-subtitle"/>
+
+        <VBox spacing="5" style="-fx-padding: 15 0 0 0;">
+            <Label text="Full Name" styleClass="login-label"/>
+            <TextField fx:id="fullNameField" promptText="Enter your full name" styleClass="login-input"/>
+        </VBox>
+
+        <VBox spacing="5">
+            <Label text="Username" styleClass="login-label"/>
+            <TextField fx:id="newUsernameField" promptText="Choose a username" styleClass="login-input"/>
+        </VBox>
+
+        <VBox spacing="5">
+            <Label text="Email" styleClass="login-label"/>
+            <TextField fx:id="emailField" promptText="Enter your email" styleClass="login-input"/>
+        </VBox>
+
+        <VBox spacing="5">
+            <Label text="Password" styleClass="login-label"/>
+            <PasswordField fx:id="newPasswordField" promptText="Choose a password" styleClass="login-input"/>
+        </VBox>
+
+        <VBox spacing="5">
+            <Label text="Confirm Password" styleClass="login-label"/>
+            <PasswordField fx:id="confirmPasswordField" promptText="Re-enter your password" styleClass="login-input"/>
+        </VBox>
+
+        <Label fx:id="registerErrorLabel" text="" styleClass="error-label" wrapText="true"/>
+
+        <Button text="Create Account" onAction="#handleRegister" styleClass="login-button" maxWidth="Infinity"/>
+        <Hyperlink text="Back to Login" onAction="#handleBackToLogin" styleClass="create-account-link"/>
+
+    </VBox>
+</ScrollPane>
