@@ -13,7 +13,11 @@ import javafx.stage.Stage;
 public class RegisterController {
 
     @FXML
-    private TextField fullNameField;
+    private TextField firstNameField;
+
+    @FXML
+    private TextField lastNameField;
+
 
     @FXML
     private TextField newUsernameField;
@@ -32,8 +36,14 @@ public class RegisterController {
 
     @FXML
     private void handleRegister() {
+
+        // Combine first and last name into a full name string
+        String firstName = text(firstNameField).trim();
+        String lastName = text(lastNameField).trim();
+        String fullName = (firstName + " " + lastName).trim();
+
         RegistrationResult result = AppServices.get().authService().register(
-                text(fullNameField),
+                fullName,
                 text(newUsernameField),
                 text(emailField),
                 text(newPasswordField),
