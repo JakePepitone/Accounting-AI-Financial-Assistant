@@ -18,7 +18,10 @@ public class RegisterController {
     private final UserDao userDao = new UserDao(new DatabaseManager());
 
     @FXML
-    private TextField fullNameField;
+    private TextField firstNameField;
+
+    @FXML
+    private TextField lastNameField;
 
     @FXML
     private TextField newUsernameField;
@@ -37,13 +40,14 @@ public class RegisterController {
 
     @FXML
     private void handleRegister() {
-        String fullName = fullNameField.getText().trim();
+        String firstName = firstNameField.getText().trim();
+        String lastName = lastNameField.getText().trim();
         String username = newUsernameField.getText().trim();
         String email = emailField.getText().trim();
         String password = newPasswordField.getText().trim();
         String confirm = confirmPasswordField.getText().trim();
 
-        if (fullName.isEmpty() || username.isEmpty() || email.isEmpty()
+        if (firstName.isEmpty() || lastName.isEmpty() || username.isEmpty() || email.isEmpty()
                 || password.isEmpty() || confirm.isEmpty()) {
             registerErrorLabel.setText("Please fill in all fields.");
             return;
@@ -63,7 +67,8 @@ public class RegisterController {
         String passwordHash = PasswordUtil.sha256(password);
 
         User user = new User(
-                fullName,
+                firstName,
+                lastName,
                 username,
                 email,
                 passwordHash

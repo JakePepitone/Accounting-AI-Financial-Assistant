@@ -49,6 +49,7 @@
 
                 <ListView fx:id="documentListView" styleClass="document-list" VBox.vgrow="ALWAYS"/>
 
+                <Button text="Delete" onAction="#handleDelete" styleClass="upload-button"/>
                 <Button text="Settings" onAction="#handleOpenSettings" styleClass="upload-button"/>
             </VBox>
 
@@ -57,7 +58,7 @@
                 <Label text="Document Preview" styleClass="panel-title"/>
                 <Separator/>
 
-                <ImageView fx:id="previewImageView" fitWidth="300" preserveRatio="true"/>
+                <ImageView fx:id="previewImageView" fitWidth="300"  fitHeight="250" preserveRatio="true"/>
                 <TextArea fx:id="previewTextArea" editable="false" wrapText="true"
                           styleClass="document-list" VBox.vgrow="ALWAYS"/>
 

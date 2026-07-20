@@ -25,8 +25,13 @@
         <Label text="Set up your new account" styleClass="login-subtitle"/>
 
         <VBox spacing="5" style="-fx-padding: 15 0 0 0;">
-            <Label text="Full Name" styleClass="login-label"/>
-            <TextField fx:id="fullNameField" promptText="Enter your full name" styleClass="login-input"/>
+            <Label text="First Name" styleClass="login-label"/>
+            <TextField fx:id="firstNameField" promptText="Enter your first name" styleClass="login-input"/>
+        </VBox>
+
+        <VBox spacing="5" style="-fx-padding: 15 0 0 0;">
+            <Label text="Last Name" styleClass="login-label"/>
+            <TextField fx:id="lastNameField" promptText="Enter your last name" styleClass="login-input"/>
         </VBox>
 
         <VBox spacing="5">
