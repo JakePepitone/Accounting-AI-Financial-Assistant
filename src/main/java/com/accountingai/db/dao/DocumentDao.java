@@ -42,8 +42,9 @@ public class DocumentDao {
     public int insert(DocumentMetadata d) {
         String sql = "INSERT INTO document_metadata("
                 + "file_name, file_path, file_size_bytes, page_count, title, author, "
-                + "uploaded_at, statement_id, status) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "uploaded_at, statement_id, status, ai_document_type, "
+                + "ai_extracted_metadata, ai_summary, ai_analyzed_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
@@ -61,6 +62,10 @@ public class DocumentDao {
                 ps.setInt(8, d.getStatementId());
             }
             ps.setString(9, d.getStatus());
+            ps.setString(10, d.getAiDocumentType());
+            ps.setString(11, d.getAiExtractedMetadata());
+            ps.setString(12, d.getAiSummary());
+            ps.setString(13, timestampToString(d.getAiAnalyzedAt()));
             ps.executeUpdate();
 
             try (ResultSet keys = ps.getGeneratedKeys()) {
@@ -166,7 +171,8 @@ public class DocumentDao {
     /** Common SELECT clause shared by the finder methods. */
     private String baseSelect() {
         return "SELECT document_id, file_name, file_path, file_size_bytes, page_count, "
-                + "title, author, uploaded_at, statement_id, status "
+                + "title, author, uploaded_at, statement_id, status, "
+                + "ai_document_type, ai_extracted_metadata, ai_summary, ai_analyzed_at "
                 + "FROM document_metadata";
     }
 
@@ -187,6 +193,10 @@ public class DocumentDao {
         d.setStatementId(rs.wasNull() ? null : statementId);
 
         d.setStatus(rs.getString("status"));
+        d.setAiDocumentType(rs.getString("ai_document_type"));
+        d.setAiExtractedMetadata(rs.getString("ai_extracted_metadata"));
+        d.setAiSummary(rs.getString("ai_summary"));
+        d.setAiAnalyzedAt(stringToTimestamp(rs.getString("ai_analyzed_at")));
         return d;
     }
 

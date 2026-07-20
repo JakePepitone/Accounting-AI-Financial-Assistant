@@ -47,6 +47,9 @@ class PdfImportServiceTest {
         assertNotNull(result.getStatement(), "A parsed statement should be attached.");
         assertNotNull(result.getMetadata(), "Document metadata should be attached.");
         assertNotNull(result.getStoredFilePath(), "The stored file path should be set.");
+        assertNotNull(result.getMetadata().getAiSummary(), "AI summary should be attached.");
+        assertTrue(result.getMetadata().getAiSummary().contains("7 transactions"));
+        assertTrue(result.getMetadata().getAiExtractedMetadata().contains("customer_name=John Smith"));
 
         // The file should have been copied into the import store.
         Path stored = Path.of(result.getStoredFilePath());

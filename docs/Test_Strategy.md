@@ -40,13 +40,14 @@ cases that map to the 10 MVP features.
 - Utilities (`com.accountingai.util`)
 - Database manager + DAOs (`com.accountingai.db`, `com.accountingai.db.dao`)
 - Services (`com.accountingai.service`) — PDF text extraction, statement parsing,
-  metadata extraction, import, batch import, search, settings
+  metadata extraction, local AI document analysis, import, batch import, search,
+  settings
 - Exporters (`com.accountingai.service.export`) — CSV, XLSX, PDF, and the
   DefaultExportService dispatcher
 - UI behavior (manual UAT only)
 
 ### Out of scope (MVP)
-- AI / OpenAI / Gemini / Claude analysis (placeholder only in the UI)
+- Cloud AI / OpenAI / Gemini / Claude analysis
 - OCR of scanned/image-only PDFs
 - Word (.docx) export (present as a disabled, "coming soon" format)
 - Cloud storage / multi-user sync
@@ -109,6 +110,7 @@ broken, independent of any application logic.
 | Statement parsing | `StatementParserTest` | Dates, balances, 7 txns, account name/number, never throws |
 | PDF text extraction | `PdfTextExtractorTest` | Extracts sample text; validates real vs non-PDF |
 | Metadata extraction | `MetadataExtractorTest` | Page count, file name/size, IMPORTED status |
+| Local AI analysis | `DocumentAiServiceTest` | Document classification, semantic metadata, summary |
 | PDF import | `PdfImportServiceTest` | Success + copied file; non-PDF/empty file fails |
 | Search | `SearchServiceTest` | Case-insensitive text search; blank query empty; DB txn search |
 | Settings | `SettingsServiceTest` | Defaults created; round-trip; page size clamped [5,200] |

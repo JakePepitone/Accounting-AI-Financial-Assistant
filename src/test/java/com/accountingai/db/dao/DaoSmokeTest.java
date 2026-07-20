@@ -37,6 +37,10 @@ class DaoSmokeTest {
         d.setUploadedAt(LocalDateTime.now());
         d.setStatementId(null);
         d.setStatus("IMPORTED");
+        d.setAiDocumentType("BANK_STATEMENT");
+        d.setAiExtractedMetadata("customer_name=John Smith\ntransaction_count=7");
+        d.setAiSummary("Bank statement contains 7 transactions.");
+        d.setAiAnalyzedAt(LocalDateTime.now());
         return d;
     }
 
@@ -63,6 +67,10 @@ class DaoSmokeTest {
         assertTrue(found.isPresent());
         assertEquals("report.pdf", found.get().getFileName());
         assertEquals(1, found.get().getPageCount());
+        assertEquals("BANK_STATEMENT", found.get().getAiDocumentType());
+        assertTrue(found.get().getAiSummary().contains("7 transactions"));
+        assertTrue(found.get().getAiExtractedMetadata().contains("customer_name=John Smith"));
+        assertTrue(found.get().getAiAnalyzedAt() != null);
     }
 
     @Test
