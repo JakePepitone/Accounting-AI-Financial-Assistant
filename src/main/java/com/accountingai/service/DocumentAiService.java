@@ -5,6 +5,10 @@ import com.accountingai.model.Statement;
 import com.accountingai.model.Transaction;
 
 import java.math.BigDecimal;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,14 +25,19 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Local AI-style document analysis for imported financial PDFs.
+ * AI-style document analysis for imported financial PDFs.
  *
- * <p>This service deliberately avoids network calls so imported financial data
- * stays on the user's machine. It combines the existing parsed statement with
- * lightweight natural-language heuristics to produce basic semantic metadata
- * and a concise document summary.</p>
+ * <p>Local deterministic analysis is the default. If configured with
+ * {@code ACCOUNTING_AI_AI_PROVIDER=openai} and an API key, this service attempts
+ * an OpenAI-compatible remote analysis and falls back to local analysis on any
+ * error so imports keep working.</p>
  */
 public class DocumentAiService {
+
+    private static final String LOCAL_PROVIDER = "LOCAL";
+    private static final String LOCAL_FALLBACK_PROVIDER = "LOCAL_FALLBACK";
+    private static final String LOCAL_MODEL = "HEURISTIC_V2";
+    private static final int MAX_REMOTE_TEXT_CHARS = 12000;
 
     private static final Pattern CUSTOMER = Pattern.compile(
             "(?im)^\\s*customer(?:\\s+name)?\\s*:?\\s*(.+?)\\s*$");
@@ -43,6 +52,36 @@ public class DocumentAiService {
             "statement", "account", "number", "customer", "period", "total",
             "balance", "beginning", "ending", "transactions", "transaction"));
 
+    private final DocumentAiConfig config;
+    private final HttpClient httpClient;
+
+    /**
+     * Creates the service using runtime config from system properties/env vars.
+     */
+    public DocumentAiService() {
+        this(new DocumentAiConfig());
+    }
+
+    /**
+     * Creates the service with explicit config.
+     *
+     * @param config AI runtime config
+     */
+    public DocumentAiService(DocumentAiConfig config) {
+        this(config, null);
+    }
+
+    /**
+     * Creates the service with explicit config and HTTP client.
+     *
+     * @param config     AI runtime config
+     * @param httpClient HTTP client for remote AI calls
+     */
+    public DocumentAiService(DocumentAiConfig config, HttpClient httpClient) {
+        this.config = config == null ? new DocumentAiConfig() : config;
+        this.httpClient = httpClient;
+    }
+
     /**
      * Generates semantic metadata and a summary for extracted document text.
      *
@@ -52,10 +91,125 @@ public class DocumentAiService {
      */
     public DocumentAiAnalysis analyze(String text, Statement statement) {
         String safeText = text == null ? "" : text;
+        if (config.isRemoteAiEnabled()) {
+            try {
+                return analyzeWithRemoteAi(safeText, statement);
+            } catch (Exception e) {
+                DocumentAiAnalysis fallback = localAnalysis(safeText, statement);
+                fallback.setProvider(LOCAL_FALLBACK_PROVIDER);
+                fallback.setExtractedMetadata(appendMetadata(
+                        fallback.getExtractedMetadata(),
+                        "ai_fallback_reason=" + sanitizeMetadataValue(e.getMessage())));
+                return fallback;
+            }
+        }
+        return localAnalysis(safeText, statement);
+    }
+
+    private DocumentAiAnalysis localAnalysis(String safeText, Statement statement) {
         String documentType = classifyDocument(safeText, statement);
         String extractedMetadata = buildMetadata(safeText, statement, documentType);
         String summary = summarize(safeText, statement, documentType);
-        return new DocumentAiAnalysis(documentType, extractedMetadata, summary, LocalDateTime.now());
+        return new DocumentAiAnalysis(
+                documentType, extractedMetadata, summary, LocalDateTime.now(),
+                LOCAL_PROVIDER, LOCAL_MODEL);
+    }
+
+    private DocumentAiAnalysis analyzeWithRemoteAi(String text, Statement statement) throws Exception {
+        String prompt = buildRemotePrompt(text, statement);
+        String responseBody = sendRemoteRequest(prompt);
+        String content = extractMessageContent(responseBody);
+        if (content == null || content.isBlank()) {
+            throw new IllegalStateException("AI response did not contain message content.");
+        }
+
+        DocumentAiAnalysis parsed = parseRemoteContent(content);
+        parsed.setAnalyzedAt(LocalDateTime.now());
+        parsed.setProvider("OPENAI");
+        parsed.setModel(config.getModel());
+
+        DocumentAiAnalysis local = localAnalysis(text, statement);
+        if (parsed.getDocumentType() == null || parsed.getDocumentType().isBlank()) {
+            parsed.setDocumentType(local.getDocumentType());
+        }
+        if (parsed.getExtractedMetadata() == null || parsed.getExtractedMetadata().isBlank()) {
+            parsed.setExtractedMetadata(local.getExtractedMetadata());
+        }
+        if (parsed.getSummary() == null || parsed.getSummary().isBlank()) {
+            parsed.setSummary(local.getSummary());
+        }
+        return parsed;
+    }
+
+    private String sendRemoteRequest(String prompt) throws Exception {
+        String body = "{"
+                + "\"model\":\"" + jsonEscape(config.getModel()) + "\","
+                + "\"temperature\":0.1,"
+                + "\"response_format\":{\"type\":\"json_object\"},"
+                + "\"messages\":["
+                + "{\"role\":\"system\",\"content\":\""
+                + jsonEscape("You extract accounting document metadata and summaries. "
+                        + "Return strict JSON only.") + "\"},"
+                + "{\"role\":\"user\",\"content\":\"" + jsonEscape(prompt) + "\"}"
+                + "]}";
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(config.getEndpoint()))
+                .timeout(config.getTimeout())
+                .header("Authorization", "Bearer " + config.getApiKey())
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        HttpClient client = httpClient == null ? HttpClient.newBuilder()
+                .connectTimeout(config.getTimeout())
+                .build() : httpClient;
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        int status = response.statusCode();
+        if (status < 200 || status >= 300) {
+            throw new IllegalStateException("AI request failed with status " + status);
+        }
+        return response.body();
+    }
+
+    private String buildRemotePrompt(String text, Statement statement) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Analyze this accounting/financial document. Return JSON with exactly these fields:\n")
+                .append("{\n")
+                .append("  \"document_type\": \"BANK_STATEMENT | INVOICE | RECEIPT | FINANCIAL_DOCUMENT | DOCUMENT\",\n")
+                .append("  \"extracted_metadata\": \"key=value lines for customer_name, account_number, period_start, period_end, transaction_count, totals, keywords, and notable financial facts\",\n")
+                .append("  \"summary\": \"2-4 concise sentences describing the document and financial highlights\"\n")
+                .append("}\n\n")
+                .append("Rules:\n")
+                .append("- Do not invent fields that are not supported by the text.\n")
+                .append("- Keep extracted_metadata machine-readable as newline-separated key=value lines.\n")
+                .append("- Use yyyy-MM-dd dates when possible.\n")
+                .append("- Keep money values in USD-style decimal/currency format when possible.\n\n");
+
+        if (statement != null) {
+            sb.append("Parsed statement facts available from the backend:\n")
+                    .append("period_start=").append(formatDate(statement.getPeriodStart())).append('\n')
+                    .append("period_end=").append(formatDate(statement.getPeriodEnd())).append('\n')
+                    .append("transaction_count=").append(transactionCount(statement)).append('\n')
+                    .append("total_deposits=").append(formatMoneyOrNull(statement.getTotalDeposits())).append('\n')
+                    .append("total_withdrawals=").append(formatMoneyOrNull(statement.getTotalWithdrawals())).append('\n')
+                    .append("ending_balance=").append(formatMoneyOrNull(statement.getEndingBalance())).append("\n\n");
+        }
+
+        sb.append("Extracted PDF text:\n")
+                .append(truncate(text, MAX_REMOTE_TEXT_CHARS));
+        return sb.toString();
+    }
+
+    private DocumentAiAnalysis parseRemoteContent(String content) {
+        String documentType = extractJsonStringField(content, "document_type");
+        String metadata = extractJsonStringField(content, "extracted_metadata");
+        String summary = extractJsonStringField(content, "summary");
+
+        if (summary == null && metadata == null && documentType == null) {
+            summary = content.trim();
+        }
+        return new DocumentAiAnalysis(documentType, metadata, summary, null, "OPENAI", config.getModel());
     }
 
     private String classifyDocument(String text, Statement statement) {
@@ -319,5 +473,139 @@ public class DocumentAiService {
                 .map(Map.Entry::getKey)
                 .reduce((a, b) -> a + ", " + b)
                 .orElse(null);
+    }
+
+    private static String appendMetadata(String metadata, String extraLine) {
+        if (extraLine == null || extraLine.isBlank()) {
+            return metadata;
+        }
+        if (metadata == null || metadata.isBlank()) {
+            return extraLine;
+        }
+        return metadata + "\n" + extraLine;
+    }
+
+    private static String sanitizeMetadataValue(String value) {
+        if (value == null || value.isBlank()) {
+            return "unknown";
+        }
+        return value.replace('\n', ' ').replace('\r', ' ').trim();
+    }
+
+    private static String truncate(String value, int maxChars) {
+        if (value == null) {
+            return "";
+        }
+        if (value.length() <= maxChars) {
+            return value;
+        }
+        return value.substring(0, maxChars) + "\n[truncated]";
+    }
+
+    private static String extractMessageContent(String responseBody) {
+        return extractJsonStringField(responseBody, "content");
+    }
+
+    private static String extractJsonStringField(String json, String fieldName) {
+        if (json == null || fieldName == null || fieldName.isBlank()) {
+            return null;
+        }
+        String needle = "\"" + fieldName + "\"";
+        int searchFrom = 0;
+        while (searchFrom < json.length()) {
+            int fieldAt = json.indexOf(needle, searchFrom);
+            if (fieldAt < 0) {
+                return null;
+            }
+            int colon = json.indexOf(':', fieldAt + needle.length());
+            if (colon < 0) {
+                return null;
+            }
+            int quote = nextNonWhitespace(json, colon + 1);
+            if (quote >= 0 && quote < json.length() && json.charAt(quote) == '"') {
+                return readJsonString(json, quote);
+            }
+            searchFrom = colon + 1;
+        }
+        return null;
+    }
+
+    private static int nextNonWhitespace(String value, int start) {
+        for (int i = start; i < value.length(); i++) {
+            if (!Character.isWhitespace(value.charAt(i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static String readJsonString(String json, int openingQuote) {
+        StringBuilder sb = new StringBuilder();
+        boolean escaped = false;
+        for (int i = openingQuote + 1; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (escaped) {
+                switch (c) {
+                    case 'n' -> sb.append('\n');
+                    case 'r' -> sb.append('\r');
+                    case 't' -> sb.append('\t');
+                    case '"' -> sb.append('"');
+                    case '\\' -> sb.append('\\');
+                    case '/' -> sb.append('/');
+                    case 'b' -> sb.append('\b');
+                    case 'f' -> sb.append('\f');
+                    case 'u' -> {
+                        if (i + 4 < json.length()) {
+                            String hex = json.substring(i + 1, i + 5);
+                            try {
+                                sb.append((char) Integer.parseInt(hex, 16));
+                                i += 4;
+                            } catch (NumberFormatException e) {
+                                sb.append("\\u").append(hex);
+                                i += 4;
+                            }
+                        } else {
+                            sb.append("\\u");
+                        }
+                    }
+                    default -> sb.append(c);
+                }
+                escaped = false;
+            } else if (c == '\\') {
+                escaped = true;
+            } else if (c == '"') {
+                return sb.toString();
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    private static String jsonEscape(String value) {
+        if (value == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder(value.length() + 16);
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            switch (c) {
+                case '"' -> sb.append("\\\"");
+                case '\\' -> sb.append("\\\\");
+                case '\b' -> sb.append("\\b");
+                case '\f' -> sb.append("\\f");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\t' -> sb.append("\\t");
+                default -> {
+                    if (c < 0x20) {
+                        sb.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        sb.append(c);
+                    }
+                }
+            }
+        }
+        return sb.toString();
     }
 }

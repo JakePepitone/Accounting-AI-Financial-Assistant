@@ -4,8 +4,11 @@ import com.accountingai.model.DocumentAiAnalysis;
 import com.accountingai.model.Statement;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -38,6 +41,8 @@ class DocumentAiServiceTest {
         DocumentAiAnalysis analysis = new DocumentAiService().analyze(SAMPLE_TEXT, statement);
 
         assertEquals("BANK_STATEMENT", analysis.getDocumentType());
+        assertEquals("LOCAL", analysis.getProvider());
+        assertEquals("HEURISTIC_V2", analysis.getModel());
         assertNotNull(analysis.getAnalyzedAt());
         assertTrue(analysis.getExtractedMetadata().contains("customer_name=John Smith"));
         assertTrue(analysis.getExtractedMetadata().contains("account_number=123456789"));
@@ -56,5 +61,16 @@ class DocumentAiServiceTest {
         assertTrue(analysis.getSummary().contains("No readable document text"));
         assertTrue(analysis.getExtractedMetadata().contains("line_count=0"));
         assertTrue(analysis.getExtractedMetadata().contains("word_count=0"));
+    }
+
+    @Test
+    void configDefaultsToLocalUnlessRemoteProviderIsExplicitlyEnabled() {
+        DocumentAiConfig local = new DocumentAiConfig("local", "secret", "model", "https://example.test", Duration.ofSeconds(1));
+        DocumentAiConfig missingKey = new DocumentAiConfig("openai", null, "model", "https://example.test", Duration.ofSeconds(1));
+        DocumentAiConfig remote = new DocumentAiConfig("openai", "secret", "model", "https://example.test", Duration.ofSeconds(1));
+
+        assertFalse(local.isRemoteAiEnabled());
+        assertFalse(missingKey.isRemoteAiEnabled());
+        assertTrue(remote.isRemoteAiEnabled());
     }
 }

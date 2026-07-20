@@ -3,17 +3,21 @@ package com.accountingai.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.accountingai.db.dao.DocumentDao;
 import com.accountingai.db.dao.TransactionDao;
+import com.accountingai.model.DocumentMetadata;
 import com.accountingai.model.SearchResult;
 import com.accountingai.model.Transaction;
 
 /**
- * Provides two kinds of search used by the main UI:
+ * Provides three kinds of search used by the main UI:
  * <ul>
  *   <li>{@link #searchInText(String, String)} — a case-insensitive, per-line
  *       search over the currently previewed document text, and</li>
  *   <li>{@link #searchTransactions(String)} — a database search over stored
- *       transaction descriptions (delegates to {@link TransactionDao}).</li>
+ *       transaction descriptions (delegates to {@link TransactionDao}), and</li>
+ *   <li>{@link #searchDocuments(String)} - a database search over AI-generated
+ *       document summaries and metadata.</li>
  * </ul>
  *
  * <p>Both methods are null/blank tolerant and always return a (possibly empty)
@@ -22,13 +26,23 @@ import com.accountingai.model.Transaction;
 public class SearchService {
 
     private final TransactionDao transactionDao;
+    private final DocumentDao documentDao;
 
     /**
      * @param transactionDao DAO used for {@link #searchTransactions(String)};
      *                       may be null if only text search is needed
      */
     public SearchService(TransactionDao transactionDao) {
+        this(transactionDao, null);
+    }
+
+    /**
+     * @param transactionDao DAO used for transaction searches
+     * @param documentDao    DAO used for AI document searches
+     */
+    public SearchService(TransactionDao transactionDao, DocumentDao documentDao) {
         this.transactionDao = transactionDao;
+        this.documentDao = documentDao;
     }
 
     /**
@@ -86,5 +100,42 @@ public class SearchService {
             results.add(new SearchResult("TRANSACTION", label, t.getId(), context.trim()));
         }
         return results;
+    }
+
+    /**
+     * Searches AI-generated document summaries and semantic metadata.
+     *
+     * @param query the search term; blank/null yields an empty result list
+     * @return one {@link SearchResult} per matching document
+     */
+    public List<SearchResult> searchDocuments(String query) {
+        List<SearchResult> results = new ArrayList<>();
+        if (query == null || query.isBlank() || documentDao == null) {
+            return results;
+        }
+
+        List<DocumentMetadata> matches = documentDao.searchByAiContent(query);
+        if (matches == null) {
+            return results;
+        }
+
+        for (DocumentMetadata d : matches) {
+            String label = d.getFileName() != null ? d.getFileName() : "";
+            String context = firstNonBlank(d.getAiSummary(), d.getAiExtractedMetadata(), d.getAiDocumentType());
+            results.add(new SearchResult("DOCUMENT", label, d.getId(), context));
+        }
+        return results;
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return "";
     }
 }

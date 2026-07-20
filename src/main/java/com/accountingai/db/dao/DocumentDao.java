@@ -43,8 +43,8 @@ public class DocumentDao {
         String sql = "INSERT INTO document_metadata("
                 + "file_name, file_path, file_size_bytes, page_count, title, author, "
                 + "uploaded_at, statement_id, status, ai_document_type, "
-                + "ai_extracted_metadata, ai_summary, ai_analyzed_at) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "ai_extracted_metadata, ai_summary, ai_analyzed_at, ai_provider, ai_model) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
@@ -66,6 +66,8 @@ public class DocumentDao {
             ps.setString(11, d.getAiExtractedMetadata());
             ps.setString(12, d.getAiSummary());
             ps.setString(13, timestampToString(d.getAiAnalyzedAt()));
+            ps.setString(14, d.getAiProvider());
+            ps.setString(15, d.getAiModel());
             ps.executeUpdate();
 
             try (ResultSet keys = ps.getGeneratedKeys()) {
@@ -147,6 +149,42 @@ public class DocumentDao {
     }
 
     /**
+     * Case-insensitive search over AI-generated document fields.
+     *
+     * @param q the text to search for
+     * @return matching documents, newest first
+     */
+    public List<DocumentMetadata> searchByAiContent(String q) {
+        if (q == null || q.isBlank()) {
+            return new ArrayList<>();
+        }
+        String sql = baseSelect()
+                + " WHERE ai_document_type LIKE '%' || ? || '%'"
+                + " OR ai_extracted_metadata LIKE '%' || ? || '%'"
+                + " OR ai_summary LIKE '%' || ? || '%'"
+                + " OR ai_provider LIKE '%' || ? || '%'"
+                + " OR ai_model LIKE '%' || ? || '%'"
+                + " ORDER BY document_id DESC";
+        List<DocumentMetadata> results = new ArrayList<>();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, q);
+            ps.setString(2, q);
+            ps.setString(3, q);
+            ps.setString(4, q);
+            ps.setString(5, q);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    results.add(mapRow(rs));
+                }
+            }
+            return results;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to search AI document content", e);
+        }
+    }
+
+    /**
      * Updates the processing status of a document (e.g. "IMPORTED", "PARSED").
      *
      * @param id     the document id
@@ -172,7 +210,8 @@ public class DocumentDao {
     private String baseSelect() {
         return "SELECT document_id, file_name, file_path, file_size_bytes, page_count, "
                 + "title, author, uploaded_at, statement_id, status, "
-                + "ai_document_type, ai_extracted_metadata, ai_summary, ai_analyzed_at "
+                + "ai_document_type, ai_extracted_metadata, ai_summary, ai_analyzed_at, "
+                + "ai_provider, ai_model "
                 + "FROM document_metadata";
     }
 
@@ -197,6 +236,8 @@ public class DocumentDao {
         d.setAiExtractedMetadata(rs.getString("ai_extracted_metadata"));
         d.setAiSummary(rs.getString("ai_summary"));
         d.setAiAnalyzedAt(stringToTimestamp(rs.getString("ai_analyzed_at")));
+        d.setAiProvider(rs.getString("ai_provider"));
+        d.setAiModel(rs.getString("ai_model"));
         return d;
     }
 
