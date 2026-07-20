@@ -1,5 +1,7 @@
 package com.accountingai.controller;
 
+import com.accountingai.AppServices;
+import com.accountingai.service.AuthService.RegistrationResult;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -8,20 +10,10 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-import com.accountingai.db.DatabaseManager;
-import com.accountingai.db.dao.UserDao;
-import com.accountingai.model.User;
-import com.accountingai.util.PasswordUtil;
-
 public class RegisterController {
 
-    private final UserDao userDao = new UserDao(new DatabaseManager());
-
     @FXML
-    private TextField firstNameField;
-
-    @FXML
-    private TextField lastNameField;
+    private TextField fullNameField;
 
     @FXML
     private TextField newUsernameField;
@@ -40,51 +32,24 @@ public class RegisterController {
 
     @FXML
     private void handleRegister() {
-        String firstName = firstNameField.getText().trim();
-        String lastName = lastNameField.getText().trim();
-        String username = newUsernameField.getText().trim();
-        String email = emailField.getText().trim();
-        String password = newPasswordField.getText().trim();
-        String confirm = confirmPasswordField.getText().trim();
+        RegistrationResult result = AppServices.get().authService().register(
+                text(fullNameField),
+                text(newUsernameField),
+                text(emailField),
+                text(newPasswordField),
+                text(confirmPasswordField));
 
-        if (firstName.isEmpty() || lastName.isEmpty() || username.isEmpty() || email.isEmpty()
-                || password.isEmpty() || confirm.isEmpty()) {
-            registerErrorLabel.setText("Please fill in all fields.");
-            return;
-        }
-
-        if (!isValidEmail(email)) {
-            registerErrorLabel.setText("Please enter a valid email address.");
-            return;
-        }
-
-        if (!password.equals(confirm)) {
-            registerErrorLabel.setText("Passwords do not match.");
+        registerErrorLabel.setText(result.message());
+        if (result.success()) {
+            newPasswordField.clear();
             confirmPasswordField.clear();
-            return;
-        }
-
-        String passwordHash = PasswordUtil.sha256(password);
-
-        User user = new User(
-                firstName,
-                lastName,
-                username,
-                email,
-                passwordHash
-        );
-
-        int userId = userDao.insert(user);
-        if (userId > 0) {
-            registerErrorLabel.setText("Account created! )");
-        }
-        else {
-            registerErrorLabel.setText("Unable to create account.");
+        } else if ("Passwords do not match.".equals(result.message())) {
+            confirmPasswordField.clear();
         }
     }
 
-    private boolean isValidEmail(String email) {
-        return email.contains("@") && email.contains(".") && email.indexOf("@") < email.lastIndexOf(".");
+    private String text(TextField field) {
+        return field == null || field.getText() == null ? "" : field.getText();
     }
 
     @FXML

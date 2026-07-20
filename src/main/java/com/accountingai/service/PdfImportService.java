@@ -5,8 +5,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+import com.accountingai.model.DocumentAiAnalysis;
 import com.accountingai.model.DocumentMetadata;
 import com.accountingai.model.ImportResult;
+import com.accountingai.model.Account;
 import com.accountingai.model.Statement;
 import com.accountingai.util.AppPaths;
 import com.accountingai.util.FileFormatValidator;
@@ -16,8 +18,9 @@ import com.accountingai.util.FileFormatValidator;
  * <ol>
  *   <li>validate that the file is a real, non-empty PDF,</li>
  *   <li>copy it into the application's import store,</li>
- *   <li>extract its text and parse it into a {@link Statement},</li>
+ *   <li>extract its text and parse it into an {@link Account} and {@link Statement},</li>
  *   <li>extract its {@link DocumentMetadata},</li>
+ *   <li>generate local AI metadata and summarization,</li>
  *   <li>return a success/failure {@link ImportResult}.</li>
  * </ol>
  *
@@ -30,6 +33,7 @@ public class PdfImportService {
     private final PdfTextExtractor extractor;
     private final StatementParser parser;
     private final MetadataExtractor metadataExtractor;
+    private final DocumentAiService aiService;
     private final Path importStore;
 
     /**
@@ -44,9 +48,27 @@ public class PdfImportService {
                             StatementParser parser,
                             MetadataExtractor metadataExtractor,
                             Path importStore) {
+        this(extractor, parser, metadataExtractor, new DocumentAiService(), importStore);
+    }
+
+    /**
+     * Full constructor with the AI analysis collaborator injected.
+     *
+     * @param extractor         PDF text extractor
+     * @param parser            statement text parser
+     * @param metadataExtractor PDF metadata extractor
+     * @param aiService         local document AI analyzer
+     * @param importStore       directory into which imported files are copied
+     */
+    public PdfImportService(PdfTextExtractor extractor,
+                            StatementParser parser,
+                            MetadataExtractor metadataExtractor,
+                            DocumentAiService aiService,
+                            Path importStore) {
         this.extractor = extractor;
         this.parser = parser;
         this.metadataExtractor = metadataExtractor;
+        this.aiService = aiService;
         this.importStore = importStore;
     }
 
@@ -58,6 +80,7 @@ public class PdfImportService {
         this(new PdfTextExtractor(),
              new StatementParser(),
              new MetadataExtractor(),
+             new DocumentAiService(),
              AppPaths.importStoreDir());
     }
 
@@ -85,12 +108,20 @@ public class PdfImportService {
             // 3) Extract text and parse it into a Statement.
             String text = extractor.extractText(stored);
             Statement statement = parser.parseStatement(text);
+            Account account = parser.parseAccount(text);
 
             // 4) Extract document metadata from the stored copy.
             DocumentMetadata metadata = metadataExtractor.extract(stored.toFile());
+            DocumentAiAnalysis analysis = aiService.analyze(text, statement);
+            metadata.setAiDocumentType(analysis.getDocumentType());
+            metadata.setAiExtractedMetadata(analysis.getExtractedMetadata());
+            metadata.setAiSummary(analysis.getSummary());
+            metadata.setAiAnalyzedAt(analysis.getAnalyzedAt());
+            metadata.setAiProvider(analysis.getProvider());
+            metadata.setAiModel(analysis.getModel());
 
             // 5) Success.
-            return ImportResult.ok(stored.toString(), statement, metadata);
+            return ImportResult.ok(stored.toString(), statement, account, metadata);
         } catch (Exception e) {
             // Any failure becomes a graceful, message-bearing failure result.
             String message = (e.getMessage() != null) ? e.getMessage() : e.toString();

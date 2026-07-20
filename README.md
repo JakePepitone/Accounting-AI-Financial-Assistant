@@ -36,6 +36,8 @@ your machine.
 - Persist parsed accounts, statements, and transactions in an embedded SQLite
   database that requires zero setup from the user.
 - Support re-exporting statement data in multiple common formats (CSV, Excel, PDF).
+- Generate local AI-style document insights, including semantic metadata and a
+  concise imported-statement summary.
 - Keep the codebase readable and well-tested as a student capstone reference.
 
 ## MVP Features (10)
@@ -53,6 +55,44 @@ your machine.
 9. **Multi-format export** - export a statement to CSV, Excel (.xlsx), or PDF.
 10. **Settings** - configure the default export folder, export format, theme, and
     page size.
+
+### AI Backend Analysis
+
+Imported PDFs now receive local AI-style analysis during the backend import
+pipeline. The app classifies the document, extracts semantic metadata such as
+customer/account/period/transaction counts, and generates a short financial
+summary. The generated AI metadata and summaries are persisted in SQLite and can
+be searched alongside document text and transactions.
+
+The backend import flow is shared by single-file and batch imports. Batch imports
+parse each PDF once, then persist the parsed account, statement, transactions,
+document metadata, and AI analysis through the same service-layer persistence
+path. Statement parsing supports the sample ISO-date format plus common variants
+such as slash dates, month-name dates, dollar signs, commas, and parenthesized
+withdrawals.
+
+By default, AI analysis uses the local deterministic analyzer, so no cloud API is
+called and no financial data leaves the user's machine. To enable a remote
+OpenAI-compatible analyzer, set these environment variables before launching:
+
+| Variable | Purpose |
+| --- | --- |
+| `ACCOUNTING_AI_AI_PROVIDER=openai` | Enables the remote AI analyzer. |
+| `OPENAI_API_KEY` or `ACCOUNTING_AI_API_KEY` | API key used for the request. |
+| `ACCOUNTING_AI_MODEL` | Optional model name; defaults to `gpt-4o-mini`. |
+| `ACCOUNTING_AI_API_URL` | Optional chat-completions endpoint override. |
+| `ACCOUNTING_AI_AI_TIMEOUT_SECONDS` | Optional request timeout; defaults to 20 seconds. |
+
+If the remote request fails, the backend automatically falls back to local
+analysis and records the provider as `LOCAL_FALLBACK`.
+
+### Backend Authentication
+
+Login and registration now go through a shared backend authentication service.
+The service normalizes form input, validates email addresses, hashes passwords,
+checks duplicate usernames/emails, and writes users through the initialized
+SQLite service container. Database startup also applies lightweight migrations
+for older local databases that are missing user profile columns.
 
 ---
 

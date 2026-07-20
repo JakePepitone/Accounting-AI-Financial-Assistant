@@ -2,7 +2,9 @@ package com.accountingai.service;
 
 import com.accountingai.db.DatabaseManager;
 import com.accountingai.db.DbTestSupport;
+import com.accountingai.db.dao.DocumentDao;
 import com.accountingai.db.dao.TransactionDao;
+import com.accountingai.model.DocumentMetadata;
 import com.accountingai.model.SearchResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -37,6 +39,23 @@ class SearchServiceTest {
         DatabaseManager db = DbTestSupport.freshDb(tmp.resolve("search.db"));
         TransactionDao dao = new TransactionDao(db);
         return new SearchService(dao);
+    }
+
+    private SearchService newServiceWithDocumentDao() {
+        DatabaseManager db = DbTestSupport.freshDb(tmp.resolve("search_docs.db"));
+        DocumentDao documentDao = new DocumentDao(db);
+        DocumentMetadata d = new DocumentMetadata();
+        d.setFileName("statement_ai.pdf");
+        d.setFilePath("/tmp/statement_ai.pdf");
+        d.setFileSizeBytes(1024);
+        d.setPageCount(1);
+        d.setUploadedAt(java.time.LocalDateTime.now());
+        d.setStatus("IMPORTED");
+        d.setAiDocumentType("BANK_STATEMENT");
+        d.setAiExtractedMetadata("customer_name=John Smith\ntransaction_count=7");
+        d.setAiSummary("Bank statement contains payroll and 7 transactions.");
+        documentDao.insert(d);
+        return new SearchService(new TransactionDao(db), documentDao);
     }
 
     @Test
@@ -74,5 +93,16 @@ class SearchServiceTest {
         assertTrue(results.stream().anyMatch(r -> r.context().contains("Amazon")
                         || r.label().contains("Amazon")),
                 "A search result should reference the Amazon transaction.");
+    }
+
+    @Test
+    void searchDocumentsFindsAiSummaryRows() {
+        SearchService service = newServiceWithDocumentDao();
+
+        List<SearchResult> results = service.searchDocuments("payroll");
+
+        assertFalse(results.isEmpty(), "AI summary search should find the inserted document.");
+        assertTrue(results.stream().anyMatch(r -> "DOCUMENT".equals(r.source())
+                && r.label().contains("statement_ai")));
     }
 }

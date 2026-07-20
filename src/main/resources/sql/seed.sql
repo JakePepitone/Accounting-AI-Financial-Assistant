@@ -38,6 +38,7 @@ VALUES
 -- Default login user.
 -- password_hash is the lowercase-hex SHA-256 of the password "1234".
 -- PasswordUtil.sha256("1234") MUST equal this literal.
-INSERT OR IGNORE INTO users (user_id, username, password_hash)
+INSERT OR IGNORE INTO users (user_id, full_name, username, email, password_hash)
 VALUES
-    (1, 'admin', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4');
+    (1, 'Admin User', 'admin', 'admin@accounting-ai.local',
+     '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4');

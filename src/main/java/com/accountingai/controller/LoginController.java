@@ -1,7 +1,6 @@
 package com.accountingai.controller;
 
 import com.accountingai.AppServices;
-import com.accountingai.util.PasswordUtil;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -25,15 +24,14 @@ public class LoginController {
     @FXML
     void handleLogin() {
         String username = usernameField.getText() == null ? "" : usernameField.getText().trim();
-        String password = passwordField.getText() == null ? "" : passwordField.getText().trim();
+        String password = passwordField.getText() == null ? "" : passwordField.getText();
 
-        if (username.isEmpty() || password.isEmpty()) {
+        if (username.isEmpty() || password.isBlank()) {
             errorLabel.setText("Please fill in all fields.");
             return;
         }
 
-        String passwordHash = PasswordUtil.sha256(password);
-        boolean ok = AppServices.get().userDao().verify(username, passwordHash);
+        boolean ok = AppServices.get().authService().verifyLogin(username, password);
 
         if (ok) {
             errorLabel.setText("");

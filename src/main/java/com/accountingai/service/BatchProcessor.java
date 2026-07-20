@@ -49,10 +49,10 @@ public class BatchProcessor {
             try {
                 ImportResult importResult = importService.importPdf(file);
                 if (importResult != null && importResult.isSuccess()) {
-                    itemResult = new BatchItemResult(fileName, true, "Imported");
+                    itemResult = new BatchItemResult(fileName, true, "Imported", importResult);
                 } else {
                     String message = (importResult != null) ? importResult.getMessage() : "Import failed";
-                    itemResult = new BatchItemResult(fileName, false, message);
+                    itemResult = new BatchItemResult(fileName, false, message, importResult);
                 }
             } catch (Exception e) {
                 // Continue-on-error: capture the failure and move on to the next file.

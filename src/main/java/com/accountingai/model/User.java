@@ -51,6 +51,13 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
+    public User(String fullName, String username, String email, String passwordHash) {
+        this.fullName = fullName;
+        this.username = username;
+        this.email = email;
+        this.passwordHash = passwordHash;
+    }
+
     public int getId() {
         return id;
     }

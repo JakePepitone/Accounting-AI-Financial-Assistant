@@ -37,6 +37,12 @@ class DaoSmokeTest {
         d.setUploadedAt(LocalDateTime.now());
         d.setStatementId(null);
         d.setStatus("IMPORTED");
+        d.setAiDocumentType("BANK_STATEMENT");
+        d.setAiExtractedMetadata("customer_name=John Smith\ntransaction_count=7");
+        d.setAiSummary("Bank statement contains 7 transactions.");
+        d.setAiAnalyzedAt(LocalDateTime.now());
+        d.setAiProvider("LOCAL");
+        d.setAiModel("HEURISTIC_V2");
         return d;
     }
 
@@ -63,6 +69,12 @@ class DaoSmokeTest {
         assertTrue(found.isPresent());
         assertEquals("report.pdf", found.get().getFileName());
         assertEquals(1, found.get().getPageCount());
+        assertEquals("BANK_STATEMENT", found.get().getAiDocumentType());
+        assertTrue(found.get().getAiSummary().contains("7 transactions"));
+        assertTrue(found.get().getAiExtractedMetadata().contains("customer_name=John Smith"));
+        assertTrue(found.get().getAiAnalyzedAt() != null);
+        assertEquals("LOCAL", found.get().getAiProvider());
+        assertEquals("HEURISTIC_V2", found.get().getAiModel());
     }
 
     @Test
@@ -77,6 +89,22 @@ class DaoSmokeTest {
         assertTrue(results.stream().anyMatch(d -> "invoice_2026.pdf".equals(d.getFileName())));
         assertFalse(results.stream().anyMatch(d -> "statement_2026.pdf".equals(d.getFileName())),
                 "Search should not return non-matching files.");
+    }
+
+    @Test
+    void searchByAiContentMatchesSummaryAndMetadata() {
+        DatabaseManager db = DbTestSupport.freshDb(tmp.resolve("doc_ai.db"));
+        DocumentDao dao = new DocumentDao(db);
+
+        dao.insert(newDoc("statement_ai.pdf"));
+
+        List<DocumentMetadata> bySummary = dao.searchByAiContent("7 transactions");
+        List<DocumentMetadata> byMetadata = dao.searchByAiContent("John Smith");
+        List<DocumentMetadata> byModel = dao.searchByAiContent("HEURISTIC_V2");
+
+        assertTrue(bySummary.stream().anyMatch(d -> "statement_ai.pdf".equals(d.getFileName())));
+        assertTrue(byMetadata.stream().anyMatch(d -> "statement_ai.pdf".equals(d.getFileName())));
+        assertTrue(byModel.stream().anyMatch(d -> "statement_ai.pdf".equals(d.getFileName())));
     }
 
     @Test

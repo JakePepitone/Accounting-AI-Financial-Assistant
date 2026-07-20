@@ -1,6 +1,7 @@
 package com.accountingai.service;
 
 import com.accountingai.model.BatchResult;
+import com.accountingai.model.BatchItemResult;
 import com.accountingai.model.ImportResult;
 import com.accountingai.model.Statement;
 import org.junit.jupiter.api.Test;
@@ -63,6 +64,9 @@ class BatchProcessorTest {
         assertEquals(3, result.total());
         assertEquals(2, result.successCount(), "Two 'good' files should succeed.");
         assertEquals(1, result.failureCount(), "One 'bad' file should fail.");
+        BatchItemResult first = result.getItems().get(0);
+        assertTrue(first.importResult() != null && first.importResult().isSuccess(),
+                "Successful batch items should carry the full import result.");
     }
 
     @Test

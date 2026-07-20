@@ -9,6 +9,7 @@ import com.accountingai.model.SearchResult;
 import com.accountingai.model.Statement;
 import com.accountingai.model.Transaction;
 import com.accountingai.service.BatchProgressListener;
+import com.accountingai.model.BatchItemResult;
 import com.accountingai.model.BatchResult;
 import com.accountingai.service.export.ExportFormat;
 import javafx.application.Platform;
@@ -154,7 +155,7 @@ public class MainController {
         try {
             ImportResult result = services.importService().importPdf(file.toPath());
             if (result.isSuccess()) {
-                persistImport(result);
+                services.importPersistenceService().persist(result);
                 refreshDocumentList();
                 statusLabel.setText("Imported: " + file.getName());
             } else {
@@ -187,99 +188,6 @@ public class MainController {
             } catch (Exception e) {
                 statusLabel.setText("Delete failed: " + e.getMessage());
             }
-        }
-    }
-
-    /**
-     * Persists a successful import: finds-or-creates the account, inserts the
-     * statement (linked to the account), the transactions (linked to the
-     * statement) and finally the document metadata (linked to the statement).
-     *
-     * @param result the successful import result to store
-     */
-    private void persistImport(ImportResult result) {
-        Statement statement = result.getStatement();
-        DocumentMetadata metadata = result.getMetadata();
-
-        // 1) Account: parse produced one on the statement's owner; fall back to a
-        //    placeholder so the foreign keys stay valid even for sparse PDFs.
-        Account parsed = extractAccount(result);
-        int accountId = services.accountDao().findOrCreate(parsed);
-
-        // 2) Statement.
-        int statementId = 0;
-        if (statement != null) {
-            statement.setAccountId(accountId);
-            statementId = services.statementDao().insert(statement);
-
-            // 3) Transactions (link each to the new statement id).
-            List<Transaction> txns = statement.getTransactions();
-            if (txns != null && !txns.isEmpty()) {
-                for (Transaction t : txns) {
-                    t.setStatementId(statementId);
-                }
-                services.transactionDao().insertBatch(txns);
-            }
-        }
-
-        // 4) Document metadata (link to the statement if we created one).
-        if (metadata != null) {
-            if (statementId > 0) {
-                metadata.setStatementId(statementId);
-            }
-            services.documentDao().insert(metadata);
-        }
-    }
-
-    /**
-     * Extracts an {@link Account} to persist. The import service does not attach
-     * an account to the {@link ImportResult}, so we re-parse the stored document
-     * text; if that yields nothing usable we fall back to a placeholder derived
-     * from the file name so the database foreign keys remain valid.
-     *
-     * @param result the import result
-     * @return a non-null account with at least a customer name and number
-     */
-    private Account extractAccount(ImportResult result) {
-        Account account = null;
-        try {
-            String storedPath = result.getStoredFilePath();
-            if (storedPath != null) {
-                String text = services.previewService().extractText(new File(storedPath));
-                account = parseAccountSafely(text);
-            }
-        } catch (Exception ignored) {
-            // fall through to the placeholder below
-        }
-
-        if (account == null) {
-            account = new Account();
-        }
-        // Ensure required fields are populated so UNIQUE(account_number) holds.
-        if (account.getCustomerName() == null || account.getCustomerName().isBlank()) {
-            account.setCustomerName("Unknown Customer");
-        }
-        if (account.getAccountNumber() == null || account.getAccountNumber().isBlank()) {
-            // Derive a stable-ish number from the document so re-imports match.
-            DocumentMetadata md = result.getMetadata();
-            String base = md != null && md.getFileName() != null ? md.getFileName() : "unknown";
-            account.setAccountNumber("AUTO-" + Integer.toHexString(base.hashCode()));
-        }
-        return account;
-    }
-
-    /**
-     * Parses an {@link Account} from raw text via the statement parser, guarding
-     * against nulls. Returns null if nothing could be parsed.
-     */
-    private Account parseAccountSafely(String text) {
-        if (text == null || text.isBlank()) {
-            return null;
-        }
-        try {
-            return new com.accountingai.service.StatementParser().parseAccount(text);
-        } catch (Exception e) {
-            return null;
         }
     }
 
@@ -319,14 +227,12 @@ public class MainController {
 
         task.setOnSucceeded(evt -> {
             BatchResult r = task.getValue();
-            // Persist each successfully imported file. The batch processor only
-            // reports pass/fail, so re-import here to store the parsed data.
             int stored = 0;
-            for (Path p : paths) {
+            for (BatchItemResult item : r.getItems()) {
                 try {
-                    ImportResult ir = services.importService().importPdf(p);
-                    if (ir.isSuccess()) {
-                        persistImport(ir);
+                    ImportResult ir = item.importResult();
+                    if (ir != null && ir.isSuccess()) {
+                        services.importPersistenceService().persist(ir);
                         stored++;
                     }
                 } catch (Exception ignored) {
@@ -466,6 +372,8 @@ public class MainController {
         hits.addAll(services.searchService().searchInText(currentDocumentText, query));
         // 2) Transactions across the whole database.
         hits.addAll(services.searchService().searchTransactions(query));
+        // 3) AI-generated document summaries and metadata.
+        hits.addAll(services.searchService().searchDocuments(query));
 
         List<String> formatted = new ArrayList<>();
         for (SearchResult r : hits) {

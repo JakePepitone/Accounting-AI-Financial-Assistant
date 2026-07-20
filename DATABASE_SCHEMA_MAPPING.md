@@ -8,7 +8,7 @@ This document defines the relational schema mapping for extracted financial stat
 ---
 
 ## 2. Relational Database Schema
-The database consists of three core tables to track user accounts, individual statement periods, and granular transaction line items.
+The database consists of five tables to track application users, financial accounts, individual statement periods, granular transaction line items, and imported document metadata.
 
 ### 2.1 Accounts Table
 Stores unique customer account details.
@@ -34,6 +34,33 @@ Stores itemized transaction data parsed during the text extraction phase (FR-2.3
 * **`transaction_date`** (DATE)
 * **`description`** (VARCHAR)
 * **`amount`** (DECIMAL)
+
+### 2.4 Document Metadata Table
+Stores imported PDF facts and local AI analysis results.
+* **`document_id`** (INT, Primary Key, Auto-Increment)
+* **`file_name`** (VARCHAR)
+* **`file_path`** (VARCHAR)
+* **`file_size_bytes`** (INT)
+* **`page_count`** (INT)
+* **`title`** (VARCHAR)
+* **`author`** (VARCHAR)
+* **`uploaded_at`** (DATETIME)
+* **`statement_id`** (INT, nullable Foreign Key referencing `Statements(statement_id)`)
+* **`status`** (VARCHAR)
+* **`ai_document_type`** (VARCHAR)
+* **`ai_extracted_metadata`** (TEXT)
+* **`ai_summary`** (TEXT)
+* **`ai_analyzed_at`** (DATETIME)
+* **`ai_provider`** (VARCHAR)
+* **`ai_model`** (VARCHAR)
+
+### 2.5 Users Table
+Stores application login accounts. Passwords are stored as SHA-256 hashes only.
+* **`user_id`** (INT, Primary Key, Auto-Increment)
+* **`full_name`** (VARCHAR)
+* **`username`** (VARCHAR, Unique)
+* **`email`** (VARCHAR, Unique)
+* **`password_hash`** (VARCHAR)
 
 ---
 

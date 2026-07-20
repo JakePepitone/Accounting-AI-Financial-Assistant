@@ -40,13 +40,14 @@ cases that map to the 10 MVP features.
 - Utilities (`com.accountingai.util`)
 - Database manager + DAOs (`com.accountingai.db`, `com.accountingai.db.dao`)
 - Services (`com.accountingai.service`) — PDF text extraction, statement parsing,
-  metadata extraction, import, batch import, search, settings
+  metadata extraction, local AI document analysis, import, batch import, search,
+  settings
 - Exporters (`com.accountingai.service.export`) — CSV, XLSX, PDF, and the
   DefaultExportService dispatcher
 - UI behavior (manual UAT only)
 
 ### Out of scope (MVP)
-- AI / OpenAI / Gemini / Claude analysis (placeholder only in the UI)
+- Live remote-AI acceptance tests that require a real API key/network connection
 - OCR of scanned/image-only PDFs
 - Word (.docx) export (present as a disabled, "coming soon" format)
 - Cloud storage / multi-user sync
@@ -101,16 +102,20 @@ broken, independent of any application logic.
 | :--- | :--- | :--- |
 | Harness wiring | `SmokeTest` | JUnit 5 + Surefire run at all |
 | Password / seed contract | `PasswordUtilTest` | `sha256("1234")` equals the seeded admin hash |
+| Database initialization | `DatabaseManagerTest` | Legacy user tables receive profile-column migrations |
+| Authentication | `AuthServiceTest` | Seeded admin login; registration validation; duplicate username/email rejection |
 | File saving | `FileSaverTest` | Bytes written, parent dirs created, extension enforced |
 | Accounts DAO | `AccountDaoTest` | Seed round-trips; insert + findOrCreate (no duplicates) |
 | Statements DAO | `StatementDaoTest` | Seed statement 101 + balances; insert round-trip |
 | Transactions DAO | `TransactionDaoTest` | 7 seeded rows; case-insensitive search; `insertBatch` |
-| Document DAO | `DaoSmokeTest` | Insert/find/search/updateStatus round-trip |
-| Statement parsing | `StatementParserTest` | Dates, balances, 7 txns, account name/number, never throws |
+| Document DAO | `DaoSmokeTest` | Insert/find/search/updateStatus round-trip; AI content search |
+| Statement parsing | `StatementParserTest` | Dates, balances, 7 txns, account name/number, common date/money variants, never throws |
 | PDF text extraction | `PdfTextExtractorTest` | Extracts sample text; validates real vs non-PDF |
 | Metadata extraction | `MetadataExtractorTest` | Page count, file name/size, IMPORTED status |
-| PDF import | `PdfImportServiceTest` | Success + copied file; non-PDF/empty file fails |
-| Search | `SearchServiceTest` | Case-insensitive text search; blank query empty; DB txn search |
+| AI analysis | `DocumentAiServiceTest` | Document classification, semantic metadata, summary, local default, remote config gate |
+| PDF import | `PdfImportServiceTest` | Success + copied file; parsed account; AI metadata attached; non-PDF/empty file fails |
+| Import persistence | `ImportPersistenceServiceTest` | Persists account, statement, transactions, document metadata, and AI fields |
+| Search | `SearchServiceTest` | Case-insensitive text search; blank query empty; DB txn search; AI document search |
 | Settings | `SettingsServiceTest` | Defaults created; round-trip; page size clamped [5,200] |
 | Batch import | `BatchProcessorTest` | Success/failure counts, continue-on-error, listener callbacks |
 | CSV export | `CsvExporterTest` | Contains descriptions, signed amounts, header, summary |

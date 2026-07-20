@@ -50,6 +50,43 @@ public class UserDao {
     }
 
     /**
+     * Finds a user by their unique email address.
+     *
+     * @param email the email address to look up
+     * @return an {@link Optional} user
+     */
+    public Optional<User> findByEmail(String email) {
+        String sql = "SELECT user_id, full_name, username, email, password_hash "
+                + "FROM users WHERE lower(email) = lower(?)";
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapRow(rs));
+                }
+            }
+            return Optional.empty();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find user by email", e);
+        }
+    }
+
+    /**
+     * @return true when the username already belongs to a user
+     */
+    public boolean usernameExists(String username) {
+        return findByUsername(username).isPresent();
+    }
+
+    /**
+     * @return true when the email already belongs to a user
+     */
+    public boolean emailExists(String email) {
+        return findByEmail(email).isPresent();
+    }
+
+    /**
      * Verifies a login by checking that a user with the given username exists
      * and has exactly the supplied password hash.
      *
@@ -83,7 +120,9 @@ public class UserDao {
 
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
-                    return keys.getInt(1);
+                    int id = keys.getInt(1);
+                    u.setId(id);
+                    return id;
                 }
             }
             return -1;

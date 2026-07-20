@@ -3,10 +3,10 @@ package com.accountingai.model;
 /**
  * The outcome of importing a single PDF document.
  * <p>
- * On success it carries the stored file path plus the parsed {@link Statement}
- * and extracted {@link DocumentMetadata}. On failure it carries a human-readable
- * message. Use the static factory methods {@link #ok} and {@link #fail} rather
- * than the constructors directly.
+ * On success it carries the stored file path plus the parsed {@link Account},
+ * {@link Statement}, and extracted {@link DocumentMetadata}. On failure it
+ * carries a human-readable message. Use the static factory methods {@link #ok}
+ * and {@link #fail} rather than the constructors directly.
  */
 public class ImportResult {
 
@@ -18,6 +18,9 @@ public class ImportResult {
 
     /** The parsed statement (null on failure). */
     private Statement statement;
+
+    /** The parsed account/customer details (null on failure or when unavailable). */
+    private Account account;
 
     /** The extracted document metadata (null on failure). */
     private DocumentMetadata metadata;
@@ -40,9 +43,25 @@ public class ImportResult {
      */
     public ImportResult(boolean success, String storedFilePath, Statement statement,
                         DocumentMetadata metadata, String message) {
+        this(success, storedFilePath, statement, null, metadata, message);
+    }
+
+    /**
+     * All-args constructor including parsed account data.
+     *
+     * @param success        whether the import succeeded
+     * @param storedFilePath the stored file path (nullable)
+     * @param statement      the parsed statement (nullable)
+     * @param account        the parsed account (nullable)
+     * @param metadata       the extracted metadata (nullable)
+     * @param message        the status/error message
+     */
+    public ImportResult(boolean success, String storedFilePath, Statement statement,
+                        Account account, DocumentMetadata metadata, String message) {
         this.success = success;
         this.storedFilePath = storedFilePath;
         this.statement = statement;
+        this.account = account;
         this.metadata = metadata;
         this.message = message;
     }
@@ -56,7 +75,20 @@ public class ImportResult {
      * @return a success {@link ImportResult}
      */
     public static ImportResult ok(String storedFilePath, Statement s, DocumentMetadata m) {
-        return new ImportResult(true, storedFilePath, s, m, "Imported");
+        return ok(storedFilePath, s, null, m);
+    }
+
+    /**
+     * Builds a successful result with parsed account details.
+     *
+     * @param storedFilePath the path where the file was stored
+     * @param s              the parsed statement
+     * @param a              the parsed account
+     * @param m              the extracted metadata
+     * @return a success {@link ImportResult}
+     */
+    public static ImportResult ok(String storedFilePath, Statement s, Account a, DocumentMetadata m) {
+        return new ImportResult(true, storedFilePath, s, a, m, "Imported");
     }
 
     /**
@@ -66,7 +98,7 @@ public class ImportResult {
      * @return a failure {@link ImportResult}
      */
     public static ImportResult fail(String message) {
-        return new ImportResult(false, null, null, null, message);
+        return new ImportResult(false, null, null, null, null, message);
     }
 
     public boolean isSuccess() {
@@ -91,6 +123,14 @@ public class ImportResult {
 
     public void setStatement(Statement statement) {
         this.statement = statement;
+    }
+
+    public Account getAccount() {
+        return account;
+    }
+
+    public void setAccount(Account account) {
+        this.account = account;
     }
 
     public DocumentMetadata getMetadata() {
