@@ -105,4 +105,48 @@ class StatementParserTest {
         assertNotNull(garbageAccount.getCustomerName(), "Name defaults to empty string, not null.");
         assertNotNull(garbageAccount.getAccountNumber());
     }
+
+    @Test
+    void parsesCommonDateAndMoneyVariants() {
+        String text =
+                "Statement Period: 06/01/2026 - 06/30/2026\n"
+                + "Customer Name: Jane Doe\n"
+                + "Account Number: ACCT-9876\n"
+                + "Beginning Balance: $5,000.00\n"
+                + "Total Deposits: $2,500.00\n"
+                + "Total Withdrawals: ($1,273.56)\n"
+                + "Ending Balance: $6,226.44\n"
+                + "06/01/2026 Payroll Deposit $2,500.00\n"
+                + "06/20/2026 Grocery Store ($152.00)\n";
+
+        StatementParser parser = new StatementParser();
+        Statement s = parser.parseStatement(text);
+        Account a = parser.parseAccount(text);
+
+        assertEquals(LocalDate.parse("2026-06-01"), s.getPeriodStart());
+        assertEquals(LocalDate.parse("2026-06-30"), s.getPeriodEnd());
+        assertEquals(0, new BigDecimal("1273.56").compareTo(s.getTotalWithdrawals()));
+        assertEquals(2, s.getTransactions().size());
+        assertEquals(0, new BigDecimal("-152.00").compareTo(s.getTransactions().get(1).getAmount()));
+        assertEquals("Jane Doe", a.getCustomerName());
+        assertEquals("ACCT-9876", a.getAccountNumber());
+    }
+
+    @Test
+    void parsesMonthNamePeriodAndTransactions() {
+        String text =
+                "Period: June 1, 2026 through June 30, 2026\n"
+                + "Beginning Balance: 1000.00\n"
+                + "Total Deposits: 300.00\n"
+                + "Total Withdrawals: 50.00\n"
+                + "Ending Balance: 1250.00\n"
+                + "June 15, 2026 Interest Payment 25.00\n";
+
+        Statement s = new StatementParser().parseStatement(text);
+
+        assertEquals(LocalDate.parse("2026-06-01"), s.getPeriodStart());
+        assertEquals(LocalDate.parse("2026-06-30"), s.getPeriodEnd());
+        assertEquals(1, s.getTransactions().size());
+        assertEquals(LocalDate.parse("2026-06-15"), s.getTransactions().get(0).getDate());
+    }
 }

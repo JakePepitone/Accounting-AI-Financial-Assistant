@@ -6,7 +6,9 @@ import com.accountingai.db.dao.DocumentDao;
 import com.accountingai.db.dao.StatementDao;
 import com.accountingai.db.dao.TransactionDao;
 import com.accountingai.db.dao.UserDao;
+import com.accountingai.service.AuthService;
 import com.accountingai.service.BatchProcessor;
+import com.accountingai.service.ImportPersistenceService;
 import com.accountingai.service.PdfImportService;
 import com.accountingai.service.PreviewService;
 import com.accountingai.service.SearchService;
@@ -39,11 +41,13 @@ public final class AppServices {
 
     // --- Services --------------------------------------------------------
     private final PdfImportService importService;
+    private final ImportPersistenceService importPersistenceService;
     private final SearchService searchService;
     private final PreviewService previewService;
     private final BatchProcessor batchProcessor;
     private final SettingsService settingsService;
     private final ExportService exportService;
+    private final AuthService authService;
 
     /**
      * Wires up all collaborators. Called once by {@link #get()}.
@@ -63,11 +67,14 @@ public final class AppServices {
 
         // Services.
         this.importService = new PdfImportService();
-        this.searchService = new SearchService(transactionDao);
+        this.importPersistenceService = new ImportPersistenceService(
+                accountDao, statementDao, transactionDao, documentDao);
+        this.searchService = new SearchService(transactionDao, documentDao);
         this.previewService = new PreviewService();
         this.batchProcessor = new BatchProcessor(importService);
         this.settingsService = new SettingsService();
         this.exportService = new DefaultExportService();
+        this.authService = new AuthService(userDao);
     }
 
     /**
@@ -112,6 +119,10 @@ public final class AppServices {
         return importService;
     }
 
+    public ImportPersistenceService importPersistenceService() {
+        return importPersistenceService;
+    }
+
     public SearchService searchService() {
         return searchService;
     }
@@ -130,5 +141,9 @@ public final class AppServices {
 
     public ExportService exportService() {
         return exportService;
+    }
+
+    public AuthService authService() {
+        return authService;
     }
 }

@@ -2,9 +2,11 @@ package com.accountingai.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,41 +19,51 @@ import com.accountingai.model.Transaction;
  * {@link PdfTextExtractor}) into structured {@link Statement} and
  * {@link Account} objects.
  *
- * <p>Scope is intentionally limited to the "John Smith" sample statement format
- * used throughout the capstone. The parser is deliberately forgiving: it NEVER
- * throws. When a field is missing or malformed it simply falls back to a
- * sensible default (null dates, {@link BigDecimal#ZERO} balances, empty
- * transaction list) and returns whatever it managed to recover.</p>
+ * <p>The parser is deliberately forgiving: it NEVER throws. When a field is
+ * missing or malformed it simply falls back to a sensible default (null dates,
+ * {@link BigDecimal#ZERO} balances, empty transaction list) and returns whatever
+ * it managed to recover.</p>
  */
 public class StatementParser {
 
-    // A single ISO date like 2026-06-01.
-    private static final Pattern DATE = Pattern.compile("(\\d{4}-\\d{2}-\\d{2})");
+    private static final String MONTH_NAME =
+            "(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
+                    + "Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|"
+                    + "Nov(?:ember)?|Dec(?:ember)?)";
+    private static final String DATE_TOKEN =
+            "(?:\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}|\\d{1,2}/\\d{1,2}/\\d{2,4}|"
+                    + MONTH_NAME + "\\s+\\d{1,2},\\s+\\d{4})";
+    private static final String MONEY_TOKEN =
+            "(?:\\(?\\s*-?\\$?\\s*\\d[\\d,]*(?:\\.\\d{2})?\\s*\\)?|-?\\$?\\s*\\d[\\d,]*(?:\\.\\d{2})?)";
 
-    // "Period: 2026-06-01 to 2026-06-30" (labels are case-insensitive, "to"/"-" both allowed).
-    private static final Pattern PERIOD = Pattern.compile(
-            "(?i)period\\s*:?\\s*(\\d{4}-\\d{2}-\\d{2})\\s*(?:to|-|through)\\s*(\\d{4}-\\d{2}-\\d{2})");
+    private static final Pattern DATE = Pattern.compile(DATE_TOKEN, Pattern.CASE_INSENSITIVE);
 
     // Balance labels -> each captures a signed decimal number.
     private static final Pattern BEGINNING =
-            Pattern.compile("(?i)beginning\\s+balance\\s*:?\\s*\\$?\\s*(-?\\d[\\d,]*\\.?\\d*)");
+            Pattern.compile("(?i)beginning\\s+balance\\s*:?\\s*(" + MONEY_TOKEN + ")");
     private static final Pattern DEPOSITS =
-            Pattern.compile("(?i)total\\s+deposits\\s*:?\\s*\\$?\\s*(-?\\d[\\d,]*\\.?\\d*)");
+            Pattern.compile("(?i)total\\s+deposits\\s*:?\\s*(" + MONEY_TOKEN + ")");
     private static final Pattern WITHDRAWALS =
-            Pattern.compile("(?i)total\\s+withdrawals\\s*:?\\s*\\$?\\s*(-?\\d[\\d,]*\\.?\\d*)");
+            Pattern.compile("(?i)total\\s+withdrawals\\s*:?\\s*(" + MONEY_TOKEN + ")");
     private static final Pattern ENDING =
-            Pattern.compile("(?i)ending\\s+balance\\s*:?\\s*\\$?\\s*(-?\\d[\\d,]*\\.?\\d*)");
+            Pattern.compile("(?i)ending\\s+balance\\s*:?\\s*(" + MONEY_TOKEN + ")");
 
     // A transaction line: <date> <description...> <amount at end of line>.
     // e.g. "2026-06-03 Amazon Purchase -125.99"
     private static final Pattern TXN_LINE = Pattern.compile(
-            "^\\s*(\\d{4}-\\d{2}-\\d{2})\\s+(.+?)\\s+(-?\\$?\\d[\\d,]*\\.\\d{2})\\s*$");
+            "^\\s*(" + DATE_TOKEN + ")\\s+(.+?)\\s+(" + MONEY_TOKEN + ")\\s*$",
+            Pattern.CASE_INSENSITIVE);
 
     // Account labels.
     private static final Pattern CUSTOMER =
             Pattern.compile("(?i)customer(?:\\s+name)?\\s*:?\\s*(.+)");
     private static final Pattern ACCOUNT_NUMBER =
             Pattern.compile("(?i)account\\s+number\\s*:?\\s*([\\w-]+)");
+
+    private static final DateTimeFormatter MONTH_DAY_YEAR =
+            DateTimeFormatter.ofPattern("MMM d, uuuu", Locale.US);
+    private static final DateTimeFormatter MONTH_DAY_YEAR_FULL =
+            DateTimeFormatter.ofPattern("MMMM d, uuuu", Locale.US);
 
     /**
      * Parses balances, the statement period, and all transaction lines out of
@@ -73,22 +85,17 @@ public class StatementParser {
             return statement;
         }
 
-        // --- Period dates ---
-        Matcher periodMatcher = PERIOD.matcher(text);
-        if (periodMatcher.find()) {
-            statement.setPeriodStart(parseDateOrNull(periodMatcher.group(1)));
-            statement.setPeriodEnd(parseDateOrNull(periodMatcher.group(2)));
-        }
+        parsePeriod(text, statement);
 
         // --- Balances ---
         statement.setBeginningBalance(findMoney(BEGINNING, text));
         statement.setTotalDeposits(findMoney(DEPOSITS, text));
-        statement.setTotalWithdrawals(findMoney(WITHDRAWALS, text));
+        statement.setTotalWithdrawals(findMoney(WITHDRAWALS, text).abs());
         statement.setEndingBalance(findMoney(ENDING, text));
 
         // --- Transactions (scan line by line) ---
         List<Transaction> transactions = new ArrayList<>();
-        String[] lines = text.split("\\r?\\n");
+        String[] lines = text.split("\\R");
         for (String line : lines) {
             Matcher m = TXN_LINE.matcher(line);
             if (m.matches()) {
@@ -156,31 +163,86 @@ public class StatementParser {
         if (raw == null) {
             return BigDecimal.ZERO;
         }
-        String cleaned = raw.replace("$", "").replace(",", "").trim();
+        String trimmed = raw.trim();
+        boolean parenthesesNegative = trimmed.startsWith("(") && trimmed.endsWith(")");
+        String cleaned = trimmed.replace("$", "")
+                .replace(",", "")
+                .replace("(", "")
+                .replace(")", "")
+                .replace(" ", "")
+                .trim();
         if (cleaned.isEmpty()) {
             return BigDecimal.ZERO;
         }
         try {
-            return new BigDecimal(cleaned);
+            BigDecimal parsed = new BigDecimal(cleaned);
+            return parenthesesNegative && parsed.compareTo(BigDecimal.ZERO) > 0
+                    ? parsed.negate()
+                    : parsed;
         } catch (NumberFormatException e) {
             return BigDecimal.ZERO;
         }
     }
 
-    /** Parses an ISO date, returning null (rather than throwing) on failure. */
+    private void parsePeriod(String text, Statement statement) {
+        for (String line : text.split("\\R")) {
+            if (line.toLowerCase(Locale.ROOT).contains("period")) {
+                List<LocalDate> dates = findDates(line);
+                if (dates.size() >= 2) {
+                    statement.setPeriodStart(dates.get(0));
+                    statement.setPeriodEnd(dates.get(1));
+                    return;
+                }
+            }
+        }
+
+        List<LocalDate> dates = findDates(text);
+        if (dates.size() >= 2) {
+            statement.setPeriodStart(dates.get(0));
+            statement.setPeriodEnd(dates.get(1));
+        }
+    }
+
+    private List<LocalDate> findDates(String text) {
+        List<LocalDate> dates = new ArrayList<>();
+        Matcher matcher = DATE.matcher(text);
+        while (matcher.find()) {
+            LocalDate date = parseDateOrNull(matcher.group());
+            if (date != null) {
+                dates.add(date);
+            }
+        }
+        return dates;
+    }
+
+    /** Parses a common statement date format, returning null (rather than throwing) on failure. */
     private LocalDate parseDateOrNull(String raw) {
         if (raw == null) {
             return null;
         }
-        // Guard: make sure it actually looks like a date before parsing.
-        Matcher m = DATE.matcher(raw);
-        if (!m.find()) {
-            return null;
+        String value = raw.trim().replaceAll("\\s+", " ");
+        Matcher shortYear = Pattern.compile("^(\\d{1,2}/\\d{1,2}/)(\\d{2})$").matcher(value);
+        if (shortYear.matches()) {
+            value = shortYear.group(1) + "20" + shortYear.group(2);
         }
-        try {
-            return LocalDate.parse(m.group(1));
-        } catch (DateTimeParseException e) {
-            return null;
+        for (DateTimeFormatter formatter : dateFormattersFor(value)) {
+            try {
+                return LocalDate.parse(value, formatter);
+            } catch (DateTimeParseException ignored) {
+                // Try the next known format.
+            }
         }
+        return null;
+    }
+
+    private List<DateTimeFormatter> dateFormattersFor(String value) {
+        List<DateTimeFormatter> formatters = new ArrayList<>();
+        formatters.add(DateTimeFormatter.ISO_LOCAL_DATE);
+        formatters.add(DateTimeFormatter.ofPattern("uuuu/M/d"));
+
+        formatters.add(DateTimeFormatter.ofPattern("M/d/uuuu"));
+        formatters.add(MONTH_DAY_YEAR);
+        formatters.add(MONTH_DAY_YEAR_FULL);
+        return formatters;
     }
 }

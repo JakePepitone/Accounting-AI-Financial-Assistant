@@ -20,10 +20,11 @@ import java.sql.Statement;
  *
  * <p>Owns the location of the on-disk database file and knows how to hand out
  * JDBC {@link Connection}s (with foreign-key enforcement turned on). It can also
- * bootstrap a brand-new database by running the bundled {@code schema.sql} and
- * {@code seed.sql} scripts from the classpath. {@link #initialize()} is safe to
- * call on every launch: it only creates tables/seed data when the database is
- * still empty, then applies lightweight additive migrations.</p>
+ * bootstrap and migrate a database by running the bundled {@code schema.sql}
+ * and {@code seed.sql} scripts from the classpath. {@link #initialize()} is
+ * safe to call on every launch because the schema uses {@code CREATE TABLE IF
+ * NOT EXISTS}, the seed script uses {@code INSERT OR IGNORE}, and feature
+ * migrations only add missing columns.</p>
  */
 public class DatabaseManager {
 
@@ -74,18 +75,16 @@ public class DatabaseManager {
     /**
      * Ensures the database is ready for use.
      *
-     * <p>If the database contains no user tables yet, this runs the bundled
-     * {@code /sql/schema.sql} followed by {@code /sql/seed.sql}. If tables
-     * already exist, it does nothing. This makes it safe to invoke on every
-     * application start.</p>
+     * <p>Runs the bundled schema on every startup to create any missing tables,
+     * applies additive migrations for older local databases, then runs the
+     * idempotent seed script.</p>
      */
     public void initialize() {
         try (Connection connection = getConnection()) {
-            if (isEmptyDatabase(connection)) {
-                runScript(connection, "/sql/schema.sql");
-                runScript(connection, "/sql/seed.sql");
-            }
+            runScript(connection, "/sql/schema.sql");
             ensureDocumentAiColumns(connection);
+            ensureUserColumns(connection);
+            runScript(connection, "/sql/seed.sql");
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to initialize the database", e);
         }
@@ -103,23 +102,6 @@ public class DatabaseManager {
     // ------------------------------------------------------------------
 
     /**
-     * Determines whether the database has any user-defined tables. SQLite keeps
-     * its own bookkeeping tables prefixed with {@code sqlite_}; those are ignored.
-     *
-     * @param connection an open connection
-     * @return {@code true} if no user tables exist yet
-     * @throws SQLException if the query fails
-     */
-    private boolean isEmptyDatabase(Connection connection) throws SQLException {
-        String sql = "SELECT count(*) FROM sqlite_master "
-                + "WHERE type='table' AND name NOT LIKE 'sqlite_%'";
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            return rs.next() && rs.getInt(1) == 0;
-        }
-    }
-
-    /**
      * Adds AI-analysis columns to older databases created before this feature.
      */
     private void ensureDocumentAiColumns(Connection connection) throws SQLException {
@@ -130,6 +112,27 @@ public class DatabaseManager {
         addColumnIfMissing(connection, "document_metadata", "ai_extracted_metadata", "TEXT");
         addColumnIfMissing(connection, "document_metadata", "ai_summary", "TEXT");
         addColumnIfMissing(connection, "document_metadata", "ai_analyzed_at", "TEXT");
+        addColumnIfMissing(connection, "document_metadata", "ai_provider", "TEXT");
+        addColumnIfMissing(connection, "document_metadata", "ai_model", "TEXT");
+    }
+
+    /**
+     * Adds user profile columns to older databases and backfills usable values.
+     */
+    private void ensureUserColumns(Connection connection) throws SQLException {
+        if (!tableExists(connection, "users")) {
+            return;
+        }
+
+        addColumnIfMissing(connection, "users", "full_name", "TEXT");
+        addColumnIfMissing(connection, "users", "email", "TEXT");
+
+        try (Statement stmt = connection.createStatement()) {
+            stmt.executeUpdate("UPDATE users SET full_name = username "
+                    + "WHERE full_name IS NULL OR trim(full_name) = ''");
+            stmt.executeUpdate("UPDATE users SET email = username || '@accounting-ai.local' "
+                    + "WHERE email IS NULL OR trim(email) = ''");
+        }
     }
 
     private boolean tableExists(Connection connection, String tableName) throws SQLException {

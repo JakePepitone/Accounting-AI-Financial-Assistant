@@ -8,6 +8,7 @@ import java.nio.file.StandardCopyOption;
 import com.accountingai.model.DocumentAiAnalysis;
 import com.accountingai.model.DocumentMetadata;
 import com.accountingai.model.ImportResult;
+import com.accountingai.model.Account;
 import com.accountingai.model.Statement;
 import com.accountingai.util.AppPaths;
 import com.accountingai.util.FileFormatValidator;
@@ -17,7 +18,7 @@ import com.accountingai.util.FileFormatValidator;
  * <ol>
  *   <li>validate that the file is a real, non-empty PDF,</li>
  *   <li>copy it into the application's import store,</li>
- *   <li>extract its text and parse it into a {@link Statement},</li>
+ *   <li>extract its text and parse it into an {@link Account} and {@link Statement},</li>
  *   <li>extract its {@link DocumentMetadata},</li>
  *   <li>generate local AI metadata and summarization,</li>
  *   <li>return a success/failure {@link ImportResult}.</li>
@@ -107,6 +108,7 @@ public class PdfImportService {
             // 3) Extract text and parse it into a Statement.
             String text = extractor.extractText(stored);
             Statement statement = parser.parseStatement(text);
+            Account account = parser.parseAccount(text);
 
             // 4) Extract document metadata from the stored copy.
             DocumentMetadata metadata = metadataExtractor.extract(stored.toFile());
@@ -115,9 +117,11 @@ public class PdfImportService {
             metadata.setAiExtractedMetadata(analysis.getExtractedMetadata());
             metadata.setAiSummary(analysis.getSummary());
             metadata.setAiAnalyzedAt(analysis.getAnalyzedAt());
+            metadata.setAiProvider(analysis.getProvider());
+            metadata.setAiModel(analysis.getModel());
 
             // 5) Success.
-            return ImportResult.ok(stored.toString(), statement, metadata);
+            return ImportResult.ok(stored.toString(), statement, account, metadata);
         } catch (Exception e) {
             // Any failure becomes a graceful, message-bearing failure result.
             String message = (e.getMessage() != null) ? e.getMessage() : e.toString();

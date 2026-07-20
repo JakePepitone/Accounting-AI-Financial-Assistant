@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS document_metadata (
     ai_extracted_metadata TEXT,
     ai_summary            TEXT,
     ai_analyzed_at        TEXT,
+    ai_provider           TEXT,
+    ai_model              TEXT,
     FOREIGN KEY (statement_id) REFERENCES statements(statement_id)
 );
 

@@ -8,6 +8,14 @@ package com.accountingai.model;
  * @param fileName the name of the file that was processed
  * @param success  true if that file imported successfully
  * @param message  a human-readable status or error message
+ * @param importResult the full import result when processing reached the import service
  */
-public record BatchItemResult(String fileName, boolean success, String message) {
+public record BatchItemResult(String fileName, boolean success, String message, ImportResult importResult) {
+
+    /**
+     * Backwards-compatible constructor for callers that only need summary data.
+     */
+    public BatchItemResult(String fileName, boolean success, String message) {
+        this(fileName, success, message, null);
+    }
 }
