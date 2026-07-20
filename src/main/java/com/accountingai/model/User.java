@@ -44,6 +44,13 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
+    public User(String firstName, String lastName, String username, String email, String passwordHash) {
+        this.fullName = firstName + " " + lastName;
+        this.username = username;
+        this.email = email;
+        this.passwordHash = passwordHash;
+    }
+
     public User(String fullName, String username, String email, String passwordHash) {
         this.fullName = fullName;
         this.username = username;

@@ -73,6 +73,9 @@ public class MainController {
     @FXML
     private Label statusLabel;
 
+    @FXML
+    private Label usernameLabel;
+
     // --- State -----------------------------------------------------------
     private AppServices services;
 
@@ -104,6 +107,31 @@ public class MainController {
                 .addListener((obs, oldDoc, newDoc) -> showPreview(newDoc));
     }
 
+
+    public void setUsername(String username) {
+        usernameLabel.setText("Logged in as: " + username);
+    }
+
+    @FXML
+    void handleLogout() {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/accountingai/login-view.fxml"));
+            Parent root = loader.load();
+
+            Scene scene = new Scene(root, 500, 650);
+            scene.getStylesheets().add(
+                    getClass().getResource("/com/accountingai/styles.css").toExternalForm());
+
+            Stage stage = (Stage) window();
+            stage.setResizable(false);
+            stage.setScene(scene);
+            stage.setTitle("Accounting AI Financial Assistant");
+            stage.centerOnScreen();
+        } catch (Exception e) {
+            statusLabel.setText("Unable to log out: " + e.getMessage());
+        }
+    }
     // ---------------------------------------------------------------------
     // Upload / import
     // ---------------------------------------------------------------------
@@ -138,6 +166,28 @@ public class MainController {
         } catch (Exception e) {
             statusLabel.setText("Import error: " + e.getMessage());
             showAlert(Alert.AlertType.ERROR, "Import error", String.valueOf(e.getMessage()));
+        }
+    }
+    // deletes whichever document is selected, after a quick confirm popup
+    @FXML
+    void handleDelete() {
+        DocumentMetadata selected = documentListView.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            statusLabel.setText("Select a document to delete first.");
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setContentText("Delete \"" + selected.getFileName() + "\"?");
+
+        if (confirm.showAndWait().filter(b -> b.getButtonData().isDefaultButton()).isPresent()) {
+            try {
+                services.documentDao().delete(selected.getId());
+                refreshDocumentList();
+                statusLabel.setText("Deleted: " + selected.getFileName());
+            } catch (Exception e) {
+                statusLabel.setText("Delete failed: " + e.getMessage());
+            }
         }
     }
 
