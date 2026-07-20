@@ -36,6 +36,8 @@ your machine.
 - Persist parsed accounts, statements, and transactions in an embedded SQLite
   database that requires zero setup from the user.
 - Support re-exporting statement data in multiple common formats (CSV, Excel, PDF).
+- Generate local AI-style document insights, including semantic metadata and a
+  concise imported-statement summary.
 - Keep the codebase readable and well-tested as a student capstone reference.
 
 ## MVP Features (10)
@@ -53,6 +55,14 @@ your machine.
 9. **Multi-format export** - export a statement to CSV, Excel (.xlsx), or PDF.
 10. **Settings** - configure the default export folder, export format, theme, and
     page size.
+
+### AI Backend Analysis
+
+Imported PDFs now receive local AI-style analysis during the backend import
+pipeline. The app classifies the document, extracts semantic metadata such as
+customer/account/period/transaction counts, and generates a short financial
+summary. The implementation is deterministic and local: no cloud API is called
+and no financial data leaves the user's machine.
 
 ---
 

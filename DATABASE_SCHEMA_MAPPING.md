@@ -35,6 +35,23 @@ Stores itemized transaction data parsed during the text extraction phase (FR-2.3
 * **`description`** (VARCHAR)
 * **`amount`** (DECIMAL)
 
+### 2.4 Document Metadata Table
+Stores imported PDF facts and local AI analysis results.
+* **`document_id`** (INT, Primary Key, Auto-Increment)
+* **`file_name`** (VARCHAR)
+* **`file_path`** (VARCHAR)
+* **`file_size_bytes`** (INT)
+* **`page_count`** (INT)
+* **`title`** (VARCHAR)
+* **`author`** (VARCHAR)
+* **`uploaded_at`** (DATETIME)
+* **`statement_id`** (INT, nullable Foreign Key referencing `Statements(statement_id)`)
+* **`status`** (VARCHAR)
+* **`ai_document_type`** (VARCHAR)
+* **`ai_extracted_metadata`** (TEXT)
+* **`ai_summary`** (TEXT)
+* **`ai_analyzed_at`** (DATETIME)
+
 ---
 
 ## 3. Sample Data Mapping (`Sample_Financial_Statement.pdf`)

@@ -47,18 +47,23 @@ CREATE TABLE IF NOT EXISTS transactions (
 );
 
 -- Metadata captured for each imported PDF file. statement_id is nullable
--- because metadata may be recorded before/without a linked statement.
+-- because metadata may be recorded before/without a linked statement. AI fields
+-- store local semantic analysis generated during import.
 CREATE TABLE IF NOT EXISTS document_metadata (
-    document_id     INTEGER PRIMARY KEY AUTOINCREMENT,
-    file_name       TEXT NOT NULL,
-    file_path       TEXT,
-    file_size_bytes INTEGER,
-    page_count      INTEGER,
-    title           TEXT,
-    author          TEXT,
-    uploaded_at     TEXT,
-    statement_id    INTEGER,
-    status          TEXT,
+    document_id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    file_name             TEXT NOT NULL,
+    file_path             TEXT,
+    file_size_bytes       INTEGER,
+    page_count            INTEGER,
+    title                 TEXT,
+    author                TEXT,
+    uploaded_at           TEXT,
+    statement_id          INTEGER,
+    status                TEXT,
+    ai_document_type      TEXT,
+    ai_extracted_metadata TEXT,
+    ai_summary            TEXT,
+    ai_analyzed_at        TEXT,
     FOREIGN KEY (statement_id) REFERENCES statements(statement_id)
 );
 
