@@ -65,6 +65,8 @@ CREATE TABLE IF NOT EXISTS document_metadata (
 -- Application users. password_hash is a lowercase-hex SHA-256 string.
 CREATE TABLE IF NOT EXISTS users (
     user_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    full_name     TEXT NOT NULL,
     username      TEXT NOT NULL UNIQUE,
+    email         TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL
 );

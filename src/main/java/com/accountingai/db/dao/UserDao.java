@@ -34,7 +34,7 @@ public class UserDao {
      * @return an {@link Optional} user
      */
     public Optional<User> findByUsername(String username) {
-        String sql = "SELECT user_id, username, password_hash FROM users WHERE username = ?";
+        String sql = "SELECT user_id, full_name, username, email, password_hash FROM users WHERE username = ?";
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
@@ -72,11 +72,13 @@ public class UserDao {
      * @return the generated user id (or -1 if none was returned)
      */
     public int insert(User u) {
-        String sql = "INSERT INTO users(username, password_hash) VALUES (?, ?)";
+        String sql = "INSERT INTO users(full_name, username, email, password_hash) VALUES (?, ?, ?, ?)";
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, u.getUsername());
-            ps.setString(2, u.getPasswordHash());
+            ps.setString(1, u.getFullName());
+            ps.setString(2, u.getUsername());
+            ps.setString(3, u.getEmail());
+            ps.setString(4, u.getPasswordHash());
             ps.executeUpdate();
 
             try (ResultSet keys = ps.getGeneratedKeys()) {
@@ -94,7 +96,9 @@ public class UserDao {
     private User mapRow(ResultSet rs) throws SQLException {
         return new User(
                 rs.getInt("user_id"),
+                rs.getString("full_name"),
                 rs.getString("username"),
+                rs.getString("email"),
                 rs.getString("password_hash"));
     }
 }
